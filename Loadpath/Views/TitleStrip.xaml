@@ -1,0 +1,64 @@
+<UserControl x:Class="Loadpath.Views.TitleStrip"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Loadpath.Controls"
+             Height="36">
+  <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,0,1" Padding="12,0">
+    <Grid ColumnSpacing="12">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+
+      <!-- App mark: a small truss glyph and the name. -->
+      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <c:Icon Kind="mark" Foreground="{StaticResource AccentBrush}" Width="16" Height="16" />
+        <TextBlock Text="Loadpath" Style="{StaticResource MediumText}" VerticalAlignment="Center" />
+      </StackPanel>
+
+      <Rectangle Grid.Column="1" Width="1" Height="16" Fill="{StaticResource HairlineStrongBrush}" VerticalAlignment="Center" />
+
+      <!-- Document name and dirty marker -->
+      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <TextBlock Text="{x:Bind Editor.DocumentName, Mode=OneWay}" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
+        <TextBlock Text="{x:Bind c:Fmt.Dirty(Editor.IsDirty), Mode=OneWay}" Style="{StaticResource CaptionText}" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" />
+      </StackPanel>
+
+      <!-- Undo / redo + status chip, centered in the free space -->
+      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Button Style="{StaticResource IconButton}" Click="OnUndo" IsEnabled="{x:Bind Editor.CanUndo, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind Editor.UndoTooltip, Mode=OneWay}" AutomationProperties.Name="Undo">
+          <c:Icon Kind="undo" Foreground="{StaticResource InkSecondaryBrush}" />
+        </Button>
+        <Button Style="{StaticResource IconButton}" Click="OnRedo" IsEnabled="{x:Bind Editor.CanRedo, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind Editor.RedoTooltip, Mode=OneWay}" AutomationProperties.Name="Redo">
+          <c:Icon Kind="redo" Foreground="{StaticResource InkSecondaryBrush}" />
+        </Button>
+        <Border Margin="12,0,0,0" Padding="8,0" Height="22" CornerRadius="11" Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <Ellipse Width="6" Height="6" Fill="{x:Bind c:Fmt.StatusBrush(Editor.IsStatusDanger, Editor.IsStatusMuted), Mode=OneWay}" VerticalAlignment="Center" />
+            <TextBlock Text="{x:Bind Editor.StatusText, Mode=OneWay}" Style="{StaticResource CaptionText}" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{x:Bind Editor.StatusDetail, Mode=OneWay}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkTertiaryBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <Button Grid.Column="4" Style="{StaticResource QuietButton}" Click="OnPalette" ToolTipService.ToolTip="Command palette   Ctrl+K" AutomationProperties.Name="Command palette">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <c:Icon Kind="search" Width="14" Height="14" />
+          <TextBlock Text="Commands" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
+          <TextBlock Text="⌃K" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+      <Button Grid.Column="5" Style="{StaticResource QuietButton}" Click="OnOpen" ToolTipService.ToolTip="Open   Ctrl+O" AutomationProperties.Name="Open">
+        <TextBlock Text="Open" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
+      </Button>
+      <Button Grid.Column="6" Style="{StaticResource OutlineButton}" Click="OnSave" ToolTipService.ToolTip="Save   Ctrl+S" AutomationProperties.Name="Save">
+        <TextBlock Text="Save" Style="{StaticResource BodyText}" VerticalAlignment="Center" />
+      </Button>
+    </Grid>
+  </Border>
+</UserControl>

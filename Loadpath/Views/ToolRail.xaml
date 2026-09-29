@@ -1,0 +1,17 @@
+<UserControl x:Class="Loadpath.Views.ToolRail"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Loadpath.Controls"
+             Width="40">
+  <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,1,0">
+    <StackPanel Spacing="4" Padding="4,8" HorizontalAlignment="Center">
+      <c:ToolButton IconKind="select" KeyLabel="V" IsActive="{x:Bind Editor.Interaction.IsSelectActive, Mode=OneWay}" Click="OnSelect" ToolTipService.ToolTip="Select   V" AutomationProperties.Name="Select tool" />
+      <c:ToolButton IconKind="node" KeyLabel="N" IsActive="{x:Bind Editor.Interaction.IsNodeActive, Mode=OneWay}" Click="OnNode" ToolTipService.ToolTip="Node   N" AutomationProperties.Name="Node tool" />
+      <c:ToolButton IconKind="member" KeyLabel="M" IsActive="{x:Bind Editor.Interaction.IsMemberActive, Mode=OneWay}" Click="OnMember" ToolTipService.ToolTip="Member   M" AutomationProperties.Name="Member tool" />
+      <c:ToolButton IconKind="load" KeyLabel="L" IsActive="{x:Bind Editor.Interaction.IsLoadActive, Mode=OneWay}" Click="OnLoad" ToolTipService.ToolTip="Load   L" AutomationProperties.Name="Load tool" />
+      <c:ToolButton IconKind="support" KeyLabel="S" IsActive="{x:Bind Editor.Interaction.IsSupportActive, Mode=OneWay}" Click="OnSupport" ToolTipService.ToolTip="Support   S" AutomationProperties.Name="Support tool" />
+      <Rectangle Height="1" Fill="{StaticResource HairlineBrush}" Margin="4,6" />
+      <c:ToolButton IconKind="pan" KeyLabel="H" IsActive="{x:Bind Editor.Interaction.IsPanActive, Mode=OneWay}" Click="OnPan" ToolTipService.ToolTip="Pan   H  (or hold Space)" AutomationProperties.Name="Pan tool" />
+    </StackPanel>
+  </Border>
+</UserControl>

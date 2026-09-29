@@ -23,6 +23,7 @@ public partial class App : Application
 #endif
         MainWindow.SetWindowIcon();
         MainWindow.Title = "Loadpath";
+        try { MainWindow.AppWindow.Resize(new Windows.Graphics.SizeInt32 { Width = 1400, Height = 860 }); } catch { /* host may refuse */ }
 
         if (MainWindow.Content is not Frame rootFrame)
         {

@@ -1,0 +1,48 @@
+<UserControl x:Class="Loadpath.Views.StatusBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="using:Loadpath.Controls"
+             Height="26">
+  <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="12,0">
+    <Grid ColumnSpacing="16">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="170" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+
+      <TextBlock Text="{x:Bind Editor.Interaction.CursorWorldText, Mode=OneWay}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
+
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <TextBlock Text="snap" Style="{StaticResource CaptionText}" VerticalAlignment="Center" />
+        <TextBlock Text="{x:Bind SnapText(Editor.Options.SnapEnabled, Editor.Options.GridStep), Mode=OneWay}" Style="{StaticResource MonoCaption}" Foreground="{x:Bind c:Fmt.AccentIf(Editor.Options.SnapEnabled), Mode=OneWay}" VerticalAlignment="Center" />
+        <TextBlock Text="·" Style="{StaticResource CaptionText}" VerticalAlignment="Center" />
+        <TextBlock Text="{x:Bind Editor.Interaction.ZoomText, Mode=OneWay}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
+      </StackPanel>
+
+      <TextBlock Grid.Column="2" Text="{x:Bind Editor.Interaction.Hint, Mode=OneWay}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+
+      <!-- Display modes -->
+      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Forces" IsChecked="{x:Bind Editor.Options.IsForces, Mode=OneWay}" Click="OnForces" ToolTipService.ToolTip="Show axial forces   1" />
+        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Utilization" IsChecked="{x:Bind Editor.Options.IsUtilization, Mode=OneWay}" Click="OnUtilization" ToolTipService.ToolTip="Show utilization   2" />
+        <Rectangle Width="1" Height="14" Fill="{StaticResource HairlineStrongBrush}" Margin="4,0" />
+        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Deflection" IsChecked="{x:Bind Editor.Options.ShowDeflection, Mode=TwoWay}" ToolTipService.ToolTip="Show deflected shape   3" />
+        <Slider Style="{StaticResource CompactSlider}" Width="64" Minimum="0.2" Maximum="3" StepFrequency="0.1" Value="{x:Bind Editor.Options.Exaggeration, Mode=TwoWay}"
+                Visibility="{x:Bind c:Fmt.Vis(Editor.Options.ShowDeflection), Mode=OneWay}" ToolTipService.ToolTip="Deflection exaggeration" VerticalAlignment="Center" />
+        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Labels" IsChecked="{x:Bind Editor.Options.ShowLabels, Mode=TwoWay}" ToolTipService.ToolTip="Show force labels   4" />
+        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Reactions" IsChecked="{x:Bind Editor.Options.ShowReactions, Mode=TwoWay}" ToolTipService.ToolTip="Show support reactions   5" />
+      </StackPanel>
+
+      <Rectangle Grid.Column="4" Width="1" Height="14" Fill="{StaticResource HairlineStrongBrush}" />
+
+      <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <TextBlock Text="max" Style="{StaticResource CaptionText}" VerticalAlignment="Center" />
+        <TextBlock Text="{x:Bind Editor.MaxUtilizationText, Mode=OneWay}" Style="{StaticResource MonoCaption}" Foreground="{x:Bind c:Fmt.UtilBrush(Editor.Analysis.MaxUtilization), Mode=OneWay}" VerticalAlignment="Center" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

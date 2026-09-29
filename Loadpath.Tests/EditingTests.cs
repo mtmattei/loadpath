@@ -34,9 +34,9 @@ public class EditingTests
         var doc = new StructureDocument();
         var h = new EditHistory(doc);
         h.Do(new AddNodeEdit(new Vec2(0, 0)));
-        h.Do(new MoveNodesEdit([1], new Vec2(0.5, 0)));
-        h.Do(new MoveNodesEdit([1], new Vec2(0.5, 0)));
-        h.Do(new MoveNodesEdit([1], new Vec2(0, 1)));
+        h.Do(new MoveNodesEdit([1], new Vec2(0.5, 0), gesture: 7));
+        h.Do(new MoveNodesEdit([1], new Vec2(0.5, 0), gesture: 7));
+        h.Do(new MoveNodesEdit([1], new Vec2(0, 1), gesture: 7));
         Assert.Equal(new Vec2(1, 1), doc.GetNode(1).Position);
         h.Undo();
         Assert.Equal(new Vec2(0, 0), doc.GetNode(1).Position);

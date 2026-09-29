@@ -1,8 +1,117 @@
 <Page x:Class="Loadpath.MainPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:c="using:Loadpath.Controls"
+      xmlns:v="using:Loadpath.Views"
+      xmlns:w="using:Loadpath.Workspace"
       Background="{StaticResource CanvasBrush}">
-  <Grid>
-    <TextBlock Text="Loadpath" Foreground="{StaticResource InkBrush}" FontFamily="{StaticResource UiFont}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+  <Grid x:Name="Root" Background="{StaticResource CanvasBrush}">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <v:TitleStrip Editor="{x:Bind Editor}" />
+
+    <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition x:Name="InspectorColumn" Width="280" />
+      </Grid.ColumnDefinitions>
+
+      <v:ToolRail x:Name="Rail" Editor="{x:Bind Editor}" />
+
+      <!-- Workspace host: canvas below, XAML overlay above. -->
+      <Grid Grid.Column="1" x:Name="WorkspaceHost">
+        <w:WorkspaceView x:Name="Workspace" Editor="{x:Bind Editor}" />
+        <c:KeySink x:Name="KeySink" />
+
+        <!-- Mechanism / unsupported banner -->
+        <Border VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,12,0,0" Padding="12,6" CornerRadius="4"
+                Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource DangerBrush}" BorderThickness="1"
+                Visibility="{x:Bind c:Fmt.Vis(Editor.IsMechanism), Mode=OneWay}" IsHitTestVisible="False">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <c:Icon Kind="warning" Foreground="{StaticResource DangerBrush}" Width="14" Height="14" />
+            <TextBlock Text="{x:Bind Editor.MechanismText, Mode=OneWay}" Style="{StaticResource BodyText}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- Empty state -->
+        <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" MaxWidth="420"
+                    Visibility="{x:Bind c:Fmt.Vis(Editor.IsEmpty), Mode=OneWay}">
+          <c:Icon Kind="mark" Width="28" Height="28" Foreground="{StaticResource InkTertiaryBrush}" StrokeThickness="1.2" />
+          <TextBlock Text="Draw a structure and it answers." Style="{StaticResource TitleText}" HorizontalAlignment="Center" />
+          <TextBlock Style="{StaticResource SecondaryText}" TextAlignment="Center" TextWrapping="Wrap">
+            <Run Text="Press" /><Run Text=" N " FontFamily="{StaticResource MonoFontMedium}" Foreground="{StaticResource InkBrush}" /><Run Text="and click to place nodes," />
+            <Run Text=" M " FontFamily="{StaticResource MonoFontMedium}" Foreground="{StaticResource InkBrush}" /><Run Text="to connect them," />
+            <Run Text=" S " FontFamily="{StaticResource MonoFontMedium}" Foreground="{StaticResource InkBrush}" /><Run Text="for supports and" />
+            <Run Text=" L " FontFamily="{StaticResource MonoFontMedium}" Foreground="{StaticResource InkBrush}" /><Run Text="for loads. Every change re-solves instantly." />
+          </TextBlock>
+          <TextBlock Text="OR START FROM A SAMPLE" Style="{StaticResource SectionLabel}" HorizontalAlignment="Center" Margin="0,8,0,0" />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <Button Style="{StaticResource OutlineButton}" Content="Warren truss" Click="OnSampleWarren" />
+            <Button Style="{StaticResource OutlineButton}" Content="Cantilever" Click="OnSampleCantilever" />
+            <Button Style="{StaticResource OutlineButton}" Content="Howe roof" Click="OnSampleRoof" />
+          </StackPanel>
+        </StackPanel>
+
+        <!-- Floating selection bar, positioned by code above the selection -->
+        <Border x:Name="FloatingBar" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed"
+                Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource HairlineStrongBrush}" BorderThickness="1" CornerRadius="6" Padding="3">
+          <StackPanel Orientation="Horizontal" Spacing="2">
+            <Button Style="{StaticResource IconButton}" Click="OnFloatSupport" ToolTipService.ToolTip="Cycle support" x:Name="FloatSupport" AutomationProperties.Name="Cycle support">
+              <c:Icon Kind="support" />
+            </Button>
+            <Button Style="{StaticResource IconButton}" Click="OnFloatLoad" ToolTipService.ToolTip="Add 10 kN load" x:Name="FloatLoad" AutomationProperties.Name="Add load">
+              <c:Icon Kind="load" />
+            </Button>
+            <Button Style="{StaticResource IconButton}" Click="OnFloatSplit" ToolTipService.ToolTip="Split member" x:Name="FloatSplit" AutomationProperties.Name="Split member">
+              <c:Icon Kind="node" />
+            </Button>
+            <Button Style="{StaticResource IconButton}" Click="OnFloatDuplicate" ToolTipService.ToolTip="Duplicate   Ctrl+D" AutomationProperties.Name="Duplicate">
+              <c:Icon Kind="duplicate" />
+            </Button>
+            <Button Style="{StaticResource IconButton}" Click="OnFloatDelete" ToolTipService.ToolTip="Delete   Del" AutomationProperties.Name="Delete">
+              <c:Icon Kind="delete" Foreground="{StaticResource DangerBrush}" />
+            </Button>
+          </StackPanel>
+        </Border>
+
+        <!-- Section drag ghost -->
+        <Border x:Name="DragGhost" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False"
+                Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource AccentBrush}" BorderThickness="1" CornerRadius="4" Padding="6,3">
+          <TextBlock x:Name="DragGhostText" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkBrush}" />
+        </Border>
+
+        <!-- Toast -->
+        <Border x:Name="Toast" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,16" Padding="12,6" CornerRadius="4" Opacity="0" IsHitTestVisible="False"
+                Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource HairlineStrongBrush}" BorderThickness="1">
+          <Border.RenderTransform>
+            <TranslateTransform x:Name="ToastTranslate" Y="6" />
+          </Border.RenderTransform>
+          <TextBlock x:Name="ToastText" Style="{StaticResource BodyText}" />
+        </Border>
+      </Grid>
+
+      <!-- Inspector column -->
+      <Grid Grid.Column="2" x:Name="InspectorHost" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1,0,0,0">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" MaxHeight="520" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
+          <v:InspectorPanel x:Name="Inspector" Editor="{x:Bind Editor}" />
+        </ScrollViewer>
+        <v:OutlinePanel Grid.Row="1" Editor="{x:Bind Editor}" />
+      </Grid>
+    </Grid>
+
+    <v:StatusBar Grid.Row="2" Editor="{x:Bind Editor}" />
+
+    <!-- Command palette overlay -->
+    <v:CommandPalette x:Name="Palette" Grid.RowSpan="3" Editor="{x:Bind Editor}" Visibility="{x:Bind c:Fmt.Vis(Editor.IsPaletteOpen), Mode=OneWay}" />
   </Grid>
 </Page>

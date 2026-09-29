@@ -25,16 +25,19 @@ public static class HitTester
     public const double MemberTolerancePx = 6;
     public const double LoadArrowPxPerKn = 4; // 10 kN = 40 px at 100%
 
-    /// <summary>Screen position of the tip of a node's load arrow (the drag handle).</summary>
+    /// <summary>
+    /// Screen position of the tail of a node's load arrow (the drag handle).
+    /// The arrow points into the node along the load direction, so the tail sits opposite to it.
+    /// </summary>
     public static Vec2 LoadHandleScreen(Node node, Viewport.Viewport vp)
     {
         var origin = vp.ToScreen(node.Position);
         var dir = new Vec2(node.Load.X, -node.Load.Y).Normalized();
         var len = LoadArrowLengthPx(node.Load.Length);
-        return origin + dir * len;
+        return origin - dir * len;
     }
 
-    public static double LoadArrowLengthPx(double magnitudeKn) => 28 + Math.Sqrt(Math.Max(0, magnitudeKn)) * 12;
+    public static double LoadArrowLengthPx(double magnitudeKn) => 22 + Math.Sqrt(Math.Max(0, magnitudeKn)) * 9;
 
     public static HitResult Test(StructureDocument doc, Viewport.Viewport vp, Vec2 screen, bool includeLoadHandles = true)
     {

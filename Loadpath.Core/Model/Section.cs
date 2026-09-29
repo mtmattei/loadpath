@@ -3,6 +3,9 @@ namespace Loadpath.Core.Model;
 /// <summary>Cross-section: area in mm², second moment of area in mm⁴. Sections are shared by members.</summary>
 public sealed record Section(string Id, string Name, double AreaMm2, double SecondMomentMm4, Material Material)
 {
+    /// <summary>Compact label for chips: the size part of the name.</summary>
+    public string ShortName => Name.Contains(' ') ? Name[(Name.IndexOf(' ') + 1)..] : Name;
+
     public double AreaM2 => AreaMm2 * 1e-6;
     public double SecondMomentM4 => SecondMomentMm4 * 1e-12;
     public double ElasticModulusPa => Material.ElasticModulusGPa * 1e9;

@@ -48,11 +48,15 @@ public sealed class AddMemberEdit : IEdit
 public sealed class MoveNodesEdit : ICoalescingEdit
 {
     private readonly int[] _nodeIds;
+    private readonly int _gesture;
     private Vec2 _delta;
-    public MoveNodesEdit(IEnumerable<int> nodeIds, Vec2 delta)
+
+    /// <param name="gesture">Edits with the same non-zero gesture id coalesce; 0 never coalesces.</param>
+    public MoveNodesEdit(IEnumerable<int> nodeIds, Vec2 delta, int gesture = 0)
     {
         _nodeIds = nodeIds.Distinct().OrderBy(i => i).ToArray();
         _delta = delta;
+        _gesture = gesture;
     }
     public string Label => _nodeIds.Length == 1 ? "Move node" : $"Move {_nodeIds.Length} nodes";
     public Vec2 Delta => _delta;
@@ -68,7 +72,7 @@ public sealed class MoveNodesEdit : ICoalescingEdit
 
     public bool TryCoalesce(IEdit next)
     {
-        if (next is not MoveNodesEdit m || !m._nodeIds.AsSpan().SequenceEqual(_nodeIds)) return false;
+        if (_gesture == 0 || next is not MoveNodesEdit m || m._gesture != _gesture || !m._nodeIds.AsSpan().SequenceEqual(_nodeIds)) return false;
         _delta += m._delta;
         return true;
     }
@@ -102,14 +106,16 @@ public sealed class SetLoadEdit : ICoalescingEdit
     private readonly int _nodeId;
     private Vec2 _to;
     private Vec2 _from;
-    private readonly bool _coalesce;
-    public SetLoadEdit(int nodeId, Vec2 to, bool coalesce = false) { _nodeId = nodeId; _to = to; _coalesce = coalesce; }
+    private readonly int _gesture;
+
+    /// <param name="gesture">Edits with the same non-zero gesture id coalesce (vector drag); 0 never coalesces.</param>
+    public SetLoadEdit(int nodeId, Vec2 to, int gesture = 0) { _nodeId = nodeId; _to = to; _gesture = gesture; }
     public string Label => _to.LengthSquared < 1e-12 ? "Clear load" : "Set load";
     public void Apply(StructureDocument doc) { _from = doc.GetNode(_nodeId).Load; doc.SetLoad(_nodeId, _to); }
     public void Revert(StructureDocument doc) => doc.SetLoad(_nodeId, _from);
     public bool TryCoalesce(IEdit next)
     {
-        if (!_coalesce || next is not SetLoadEdit s || !s._coalesce || s._nodeId != _nodeId) return false;
+        if (_gesture == 0 || next is not SetLoadEdit s || s._gesture != _gesture || s._nodeId != _nodeId) return false;
         _to = s._to;
         return true;
     }
