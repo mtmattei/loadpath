@@ -329,9 +329,9 @@ Loadpath/                        (solution root)
 
 ### State model
 
-**Decision: MVVM (CommunityToolkit.Mvvm) over MVUX.**
-Reason: the editor's state is a mutable document mutated synchronously at pointer-move rate, with an undo history and a selection set. MVUX's immutable feed model would force a document copy per drag frame and fights the coalescing undo pattern.
-Tradeoff: no generated feeds; observable properties are hand-declared. Binding style is `x:Bind` throughout (compiled, typed), since DataContexts are plain typed objects.
+**Decision: MVUX for the presentation layer, an imperative engine underneath.** (Revised after the first build shipped with MVVM; the owner asked for MVUX.)
+Reason: everything the views show is app-level state that fits states and feeds, and every action is a generated or feed-gated command. The document itself is mutated synchronously at pointer-move rate with a coalescing undo history, so it stays imperative in `EditorEngine` and the model projects its events into immutable records.
+Tradeoff: two layers, `{Binding}` with converters instead of compiled `x:Bind`, and a plain mirror of the option states for the renderer.
 
 State ownership:
 - `StructureDocument` (Core): the truth. Raises `Changed(DocumentChange)`.

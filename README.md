@@ -54,17 +54,17 @@ Loadpath.Core/      net10.0 class library, no UI dependency
   Serialization/    DocumentSerializer (JSON v1)
   Samples/          Warren, cantilever, Howe roof
 Loadpath/           Uno single-project app
-  Presentation/     EditorViewModel, InspectorViewModel, OutlineViewModel, ViewOptions
+  Presentation/     EditorEngine (imperative), EditorModel (MVUX states, feeds, commands), Records, ViewOptions
   Commands/         AppCommand, CommandRegistry (shortcut parsing)
   Workspace/        WorkspaceView (SKCanvasElement), WorkspaceRenderer, RenderSnapshot, WorkspaceInteraction, Tools/
   Views/            TitleStrip, ToolRail, InspectorPanel, OutlinePanel, StatusBar, CommandPalette
-  Controls/         Icon, ToolButton, NumberField, UtilizationBar, KeySink, IconLibrary, Fmt
+  Controls/         Icon, ToolButton, NumberField, UtilizationBar, KeySink, IconLibrary, Converters
   Services/         FileService, SettingsService
   Themes/           Tokens, MotionTokens, Icons, Controls
 Loadpath.Tests/     xunit: solver against method-of-joints values, mechanism detection, history, geometry, serializer
 ```
 
-**Decision: MVVM (CommunityToolkit.Mvvm) rather than MVUX.** The document is mutated synchronously at pointer-move rate with a coalescing undo history; immutable feeds would force a document copy per drag frame. Binding is `x:Bind` throughout, since every DataContext is a plain typed object. Tradeoff: observable properties are declared by hand.
+**Decision: MVUX for the presentation layer, an imperative engine for the document.** `EditorModel` is a `partial record` whose states and feeds carry immutable records (`EditorStatus`, `InspectorContent`, `OutlineItem`, `PaletteItem`); the generated `EditorViewModel` is the page's DataContext and every view binds with `{Binding}`. Buttons bind generated commands; undo and redo are feed-gated (`Command.Create(b => b.Given(Status).When(s => s.CanUndo)...)`). `EditorEngine` owns the document, undo history, selection, viewport and tools, and raises events the model projects into states, because a solve on every pointer move cannot copy an immutable document per frame. Tradeoff: two layers, and a plain `ViewOptions` mirror of the option states for the renderer.
 
 **Decision: one `SKCanvasElement` for the workspace, XAML for everything contextual.** Ribbons, labels, supports, guides and adorners must be pixel-registered with the structure, so they are Skia. The floating bar, banners, toasts and the drag ghost are XAML on an overlay layer positioned through the viewport transform. The renderer reads a `RenderSnapshot` built on the UI thread and holds no per-frame allocations beyond paths. There is no `CompositionTarget.Rendering` subscription; viewport animations run a timer only while moving.
 
@@ -75,7 +75,7 @@ Loadpath.Tests/     xunit: solver against method-of-joints values, mechanism det
 ## Validation
 
 - 21 unit tests: a triangle truss matches method-of-joints forces and reactions to three decimals; a square without a diagonal is a mechanism; detached parts are left out; drags coalesce; delete/split/duplicate revert exactly; samples serialize round-trip and all solve below full utilization.
-- Runtime: the app was driven under Xvfb with `xdotool` (`tools/drive.sh`) through select, drag with live re-solve, undo, node and member chaining with guides, load vector drag, support cycling, marquee delete, load-handle drag, number-field editing, outline selection, section drag-and-drop, the combo box, the palette, context menus, display modes, save to disk and autosave restore. Screenshots in `docs/` come from those runs.
+- Runtime: the app was driven under Xvfb with `xdotool` (`tools/drive.sh`) through select, drag with live re-solve, undo, node and member chaining with guides, load vector drag, support cycling, marquee delete, load-handle drag, number-field editing, outline selection and collapse, bulk support and section actions, section drag-and-drop, the combo box, the palette (search, arrow keys, Enter), context menus, display modes, save to disk and autosave restore. The same pass was repeated after the MVUX conversion. Screenshots in `docs/` come from those runs.
 - Release build has zero warnings.
 
 Fixture hooks (Debug only) make headless captures deterministic: `LOADPATH_SAMPLE=warren|cantilever|roof`, `LOADPATH_RESET=1` (ignore settings and autosave), `LOADPATH_SELECT=n4,m12`, `LOADPATH_MODE=utilization,deflection,reactions,nolabels`, `LOADPATH_TOOL=member`, `LOADPATH_PALETTE=1`, `LOADPATH_TOAST=text`, `LOADPATH_EDIT=unsupported|overload`, `LOADPATH_TRACE=path`.
@@ -86,3 +86,6 @@ Fixture hooks (Debug only) make headless captures deterministic: `LOADPATH_SAMPL
 - On Linux the file pickers go through the xdg-desktop-portal. Without a session bus the app saves to `~/Documents/Loadpath` and says so in a toast.
 - Mouse-wheel zoom uses `PointerWheelChanged`. Synthesized X11 button-4/5 clicks arrive as plain presses on this host, so wheel zoom was not exercised headlessly; `Ctrl+=`, `Ctrl+-`, `Ctrl+0`, `Ctrl+1` and `F` were.
 - `SKCanvasElement` ignores `UIElement.Opacity`; dimming is baked into the paints.
+- MVUX generator notes: records carried by feeds are plain `partial record`s (no `required` members, no record structs), colors travel as resource keys resolved by a converter, and a `readonly record struct` with an `Id` property must not be `partial` or the key-equality generator emits a non-partial duplicate.
+- MVUX runs generated commands and `ForEach` callbacks on a thread-pool thread. Anything that mutates the document (and therefore raises events that reach XAML) is posted back to the UI dispatcher through `EditorModel.Ui(...)`; without it the first edit of a transaction lands and the rest throw "dependency property system should not be accessed from non UI thread".
+- When a focused element leaves the tree (a collapsing inspector panel, the closing palette) keyboard events lose their target; the page moves focus back to an invisible `KeySink` on selection changes and palette close.

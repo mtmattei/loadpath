@@ -18,11 +18,11 @@ namespace Loadpath.Workspace;
 public sealed partial class WorkspaceView : SKCanvasElement
 {
     public static readonly DependencyProperty EditorProperty = DependencyProperty.Register(
-        nameof(Editor), typeof(EditorViewModel), typeof(WorkspaceView), new PropertyMetadata(null, (d, e) => ((WorkspaceView)d).Attach(e.OldValue as EditorViewModel, e.NewValue as EditorViewModel)));
+        nameof(Editor), typeof(EditorEngine), typeof(WorkspaceView), new PropertyMetadata(null, (d, e) => ((WorkspaceView)d).Attach(e.OldValue as EditorEngine, e.NewValue as EditorEngine)));
 
     private readonly WorkspaceRenderer _renderer = new();
     private volatile RenderSnapshot _snapshot = RenderSnapshot.Empty;
-    private EditorViewModel? _editor;
+    private EditorEngine? _editor;
     private DispatcherTimer? _animTimer;
     private (double Scale, Vec2 Offset) _animFrom;
     private (double Scale, Vec2 Offset) _animTo;
@@ -59,16 +59,16 @@ public sealed partial class WorkspaceView : SKCanvasElement
         PointerWheelChanged += OnPointerWheelChanged;
     }
 
-    public EditorViewModel? Editor
+    public EditorEngine? Editor
     {
-        get => (EditorViewModel?)GetValue(EditorProperty);
+        get => (EditorEngine?)GetValue(EditorProperty);
         set => SetValue(EditorProperty, value);
     }
 
     /// <summary>Raised on right-click with the screen point and what was hit.</summary>
     public event EventHandler<(Point Position, HitResult Hit)>? ContextMenuRequested;
 
-    private void Attach(EditorViewModel? old, EditorViewModel? editor)
+    private void Attach(EditorEngine? old, EditorEngine? editor)
     {
         if (old is not null)
         {
@@ -113,7 +113,7 @@ public sealed partial class WorkspaceView : SKCanvasElement
 
     // ---- snapshot ----
 
-    private static RenderSnapshot BuildSnapshot(EditorViewModel ed, float width, float height)
+    private static RenderSnapshot BuildSnapshot(EditorEngine ed, float width, float height)
     {
         var doc = ed.Document;
         var vp = ed.Viewport;

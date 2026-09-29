@@ -13,7 +13,7 @@
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
 
-    <v:TitleStrip Editor="{x:Bind Editor}" />
+    <v:TitleStrip />
 
     <Grid Grid.Row="1">
       <Grid.ColumnDefinitions>
@@ -22,36 +22,36 @@
         <ColumnDefinition x:Name="InspectorColumn" Width="280" />
       </Grid.ColumnDefinitions>
 
-      <v:ToolRail x:Name="Rail" Editor="{x:Bind Editor}" />
+      <v:ToolRail x:Name="Rail" />
 
       <!-- Workspace host: canvas below, XAML overlay above. -->
       <Grid Grid.Column="1" x:Name="WorkspaceHost">
-        <w:WorkspaceView x:Name="Workspace" Editor="{x:Bind Editor}" AutomationProperties.Name="Structure workspace" />
+        <w:WorkspaceView x:Name="Workspace" AutomationProperties.Name="Structure workspace" />
         <c:KeySink x:Name="KeySink" />
 
         <!-- Mechanism / unsupported banner -->
         <Border VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,12,0,0" Padding="12,6" CornerRadius="4"
                 Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource DangerBrush}" BorderThickness="1"
-                Visibility="{x:Bind c:Fmt.Vis(Editor.IsMechanism), Mode=OneWay}" IsHitTestVisible="False">
+                Visibility="{Binding Status.IsMechanism, Converter={StaticResource Vis}}" IsHitTestVisible="False">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <c:Icon Kind="warning" Foreground="{StaticResource DangerBrush}" Width="14" Height="14" />
-            <TextBlock Text="{x:Bind Editor.MechanismText, Mode=OneWay}" Style="{StaticResource BodyText}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Status.MechanismText}" Style="{StaticResource BodyText}" VerticalAlignment="Center" />
           </StackPanel>
         </Border>
 
         <!-- Detached parts notice (warning, not failure) -->
         <Border VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,12,0,0" Padding="12,6" CornerRadius="4"
                 Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource HairlineStrongBrush}" BorderThickness="1"
-                Visibility="{x:Bind c:Fmt.Vis(Editor.HasDetached), Mode=OneWay}" IsHitTestVisible="False">
+                Visibility="{Binding Status.HasDetached, Converter={StaticResource Vis}}" IsHitTestVisible="False">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <c:Icon Kind="warning" Foreground="{StaticResource InkSecondaryBrush}" Width="14" Height="14" />
-            <TextBlock Text="{x:Bind Editor.DetachedText, Mode=OneWay}" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Status.DetachedText}" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
           </StackPanel>
         </Border>
 
         <!-- Empty state -->
         <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" MaxWidth="420"
-                    Visibility="{x:Bind c:Fmt.Vis(Editor.IsEmpty), Mode=OneWay}">
+                    Visibility="{Binding Status.IsEmpty, Converter={StaticResource Vis}}">
           <c:Icon Kind="mark" Width="28" Height="28" Foreground="{StaticResource InkTertiaryBrush}" StrokeThickness="1.2" />
           <TextBlock Text="Draw a structure and it answers." Style="{StaticResource TitleText}" HorizontalAlignment="Center" />
           <TextBlock Style="{StaticResource SecondaryText}" TextAlignment="Center" TextWrapping="Wrap">
@@ -62,9 +62,9 @@
           </TextBlock>
           <TextBlock Text="OR START FROM A SAMPLE" Style="{StaticResource SectionLabel}" HorizontalAlignment="Center" Margin="0,8,0,0" />
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <Button Style="{StaticResource OutlineButton}" Content="Warren truss" Click="OnSampleWarren" />
-            <Button Style="{StaticResource OutlineButton}" Content="Cantilever" Click="OnSampleCantilever" />
-            <Button Style="{StaticResource OutlineButton}" Content="Howe roof" Click="OnSampleRoof" />
+            <Button Style="{StaticResource OutlineButton}" Content="Warren truss" Command="{Binding SampleWarren}" />
+            <Button Style="{StaticResource OutlineButton}" Content="Cantilever" Command="{Binding SampleCantilever}" />
+            <Button Style="{StaticResource OutlineButton}" Content="Howe roof" Command="{Binding SampleRoof}" />
           </StackPanel>
         </StackPanel>
 
@@ -72,19 +72,19 @@
         <Border x:Name="FloatingBar" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed"
                 Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource HairlineStrongBrush}" BorderThickness="1" CornerRadius="6" Padding="3">
           <StackPanel Orientation="Horizontal" Spacing="2">
-            <Button Style="{StaticResource IconButton}" Click="OnFloatSupport" ToolTipService.ToolTip="Cycle support" x:Name="FloatSupport" AutomationProperties.Name="Cycle support">
+            <Button Style="{StaticResource IconButton}" Command="{Binding CycleSupport}" ToolTipService.ToolTip="Cycle support" x:Name="FloatSupport" AutomationProperties.Name="Cycle support">
               <c:Icon Kind="support" />
             </Button>
-            <Button Style="{StaticResource IconButton}" Click="OnFloatLoad" ToolTipService.ToolTip="Add 10 kN load" x:Name="FloatLoad" AutomationProperties.Name="Add load">
+            <Button Style="{StaticResource IconButton}" Command="{Binding AddLoad}" ToolTipService.ToolTip="Add 10 kN load" x:Name="FloatLoad" AutomationProperties.Name="Add load">
               <c:Icon Kind="load" />
             </Button>
-            <Button Style="{StaticResource IconButton}" Click="OnFloatSplit" ToolTipService.ToolTip="Split member" x:Name="FloatSplit" AutomationProperties.Name="Split member">
+            <Button Style="{StaticResource IconButton}" Command="{Binding SplitMember}" ToolTipService.ToolTip="Split member" x:Name="FloatSplit" AutomationProperties.Name="Split member">
               <c:Icon Kind="node" />
             </Button>
-            <Button Style="{StaticResource IconButton}" Click="OnFloatDuplicate" ToolTipService.ToolTip="Duplicate   Ctrl+D" AutomationProperties.Name="Duplicate">
+            <Button Style="{StaticResource IconButton}" Command="{Binding DuplicateSelection}" ToolTipService.ToolTip="Duplicate   Ctrl+D" AutomationProperties.Name="Duplicate">
               <c:Icon Kind="duplicate" />
             </Button>
-            <Button Style="{StaticResource IconButton}" Click="OnFloatDelete" ToolTipService.ToolTip="Delete   Del" AutomationProperties.Name="Delete">
+            <Button Style="{StaticResource IconButton}" Command="{Binding DeleteSelection}" ToolTipService.ToolTip="Delete   Del" AutomationProperties.Name="Delete">
               <c:Icon Kind="delete" Foreground="{StaticResource DangerBrush}" />
             </Button>
           </StackPanel>
@@ -113,15 +113,15 @@
           <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
-          <v:InspectorPanel x:Name="Inspector" Editor="{x:Bind Editor}" />
+          <v:InspectorPanel x:Name="Inspector" />
         </ScrollViewer>
-        <v:OutlinePanel Grid.Row="1" Editor="{x:Bind Editor}" />
+        <v:OutlinePanel x:Name="Outline" Grid.Row="1" />
       </Grid>
     </Grid>
 
-    <v:StatusBar Grid.Row="2" Editor="{x:Bind Editor}" />
+    <v:StatusBar Grid.Row="2" />
 
     <!-- Command palette overlay -->
-    <v:CommandPalette x:Name="Palette" Grid.RowSpan="3" Editor="{x:Bind Editor}" Visibility="{x:Bind c:Fmt.Vis(Editor.IsPaletteOpen), Mode=OneWay}" />
+    <v:CommandPalette x:Name="Palette" Grid.RowSpan="3" Visibility="{Binding IsPaletteOpen, Converter={StaticResource Vis}}" />
   </Grid>
 </Page>

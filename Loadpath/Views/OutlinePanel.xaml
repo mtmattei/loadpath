@@ -1,11 +1,10 @@
 <UserControl x:Class="Loadpath.Views.OutlinePanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:c="using:Loadpath.Controls"
-             xmlns:p="using:Loadpath.Presentation">
+             xmlns:c="using:Loadpath.Controls">
   <UserControl.Resources>
-    <DataTemplate x:Key="OutlineRow" x:DataType="p:OutlineItem">
-      <Border Height="26" Padding="12,0" Background="{x:Bind c:Fmt.SelectedBrush(IsSelected), Mode=OneWay}" Tag="{x:Bind}"
+    <DataTemplate x:Key="OutlineRow">
+      <Border Height="26" Padding="12,0" Background="{Binding RowBrushKey, Converter={StaticResource Brush}}" Tag="{Binding Key}"
               PointerPressed="OnRowPressed" PointerEntered="OnRowEntered" PointerExited="OnRowExited">
         <Grid ColumnSpacing="8">
           <Grid.ColumnDefinitions>
@@ -14,18 +13,18 @@
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="Auto" />
           </Grid.ColumnDefinitions>
-          <TextBlock Text="{x:Bind Label, Mode=OneWay}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
-          <TextBlock Grid.Column="1" Text="{x:Bind Detail, Mode=OneWay}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-          <Border Grid.Column="2" Visibility="{x:Bind c:Fmt.Vis(HasBadge), Mode=OneWay}" Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource HairlineStrongBrush}" BorderThickness="1" CornerRadius="3" Padding="4,1" VerticalAlignment="Center">
-            <TextBlock Text="{x:Bind Badge, Mode=OneWay}" Style="{StaticResource MonoCaption}" FontSize="9" Foreground="{StaticResource InkSecondaryBrush}" />
+          <TextBlock Text="{Binding Label}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Text="{Binding Detail}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          <Border Grid.Column="2" Visibility="{Binding HasBadge, Converter={StaticResource Vis}}" Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource HairlineStrongBrush}" BorderThickness="1" CornerRadius="3" Padding="4,1" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Badge}" Style="{StaticResource MonoCaption}" FontSize="9" Foreground="{StaticResource InkSecondaryBrush}" />
           </Border>
-          <TextBlock Grid.Column="3" Text="{x:Bind Value, Mode=OneWay}" Style="{StaticResource MonoCaption}" Foreground="{x:Bind c:Fmt.ForceBrush(IsTension, IsCompression, IsDanger), Mode=OneWay}" VerticalAlignment="Center" MinWidth="44" TextAlignment="Right" />
+          <TextBlock Grid.Column="3" Text="{Binding Value}" Style="{StaticResource MonoCaption}" Foreground="{Binding ValueToneKey, Converter={StaticResource Brush}}" VerticalAlignment="Center" MinWidth="44" TextAlignment="Right" />
         </Grid>
       </Border>
     </DataTemplate>
   </UserControl.Resources>
 
-  <Grid RowSpacing="0">
+  <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
@@ -35,21 +34,25 @@
     </Border>
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
       <StackPanel Padding="0,0,0,12">
-        <TextBlock Text="No elements yet" Style="{StaticResource CaptionText}" Margin="12,4" Visibility="{x:Bind c:Fmt.Vis(Editor.Outline.IsEmpty), Mode=OneWay}" />
-        <Border Padding="12,4" Tapped="OnToggleNodes" Visibility="{x:Bind c:Fmt.VisNot(Editor.Outline.IsEmpty), Mode=OneWay}">
+        <TextBlock Text="No elements yet" Style="{StaticResource CaptionText}" Margin="12,4" Visibility="{Binding OutlineIsEmpty, Converter={StaticResource Vis}}" />
+        <Button Style="{StaticResource QuietButton}" Command="{Binding ToggleNodes}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,0" Height="24"
+                Visibility="{Binding OutlineIsEmpty, Converter={StaticResource Vis}, ConverterParameter=invert}">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <c:Icon Kind="{x:Bind Chevron(Editor.Outline.NodesExpanded), Mode=OneWay}" Width="12" Height="12" Foreground="{StaticResource InkTertiaryBrush}" />
-            <TextBlock Text="{x:Bind Editor.Outline.NodesHeader, Mode=OneWay}" Style="{StaticResource CaptionText}" Foreground="{StaticResource InkSecondaryBrush}" />
+            <c:Icon Kind="chevron-down" Width="12" Height="12" Foreground="{StaticResource InkTertiaryBrush}" Visibility="{Binding NodesExpanded, Converter={StaticResource Vis}}" />
+            <c:Icon Kind="chevron-right" Width="12" Height="12" Foreground="{StaticResource InkTertiaryBrush}" Visibility="{Binding NodesExpanded, Converter={StaticResource Vis}, ConverterParameter=invert}" />
+            <TextBlock Text="{Binding NodesHeader}" Style="{StaticResource CaptionText}" Foreground="{StaticResource InkSecondaryBrush}" />
           </StackPanel>
-        </Border>
-        <ItemsControl ItemsSource="{x:Bind Editor.Outline.Nodes, Mode=OneWay}" ItemTemplate="{StaticResource OutlineRow}" Visibility="{x:Bind c:Fmt.Vis(Editor.Outline.NodesExpanded), Mode=OneWay}" />
-        <Border Padding="12,4" Tapped="OnToggleMembers" Visibility="{x:Bind c:Fmt.VisNot(Editor.Outline.IsEmpty), Mode=OneWay}">
+        </Button>
+        <ItemsControl ItemsSource="{Binding OutlineNodes}" ItemTemplate="{StaticResource OutlineRow}" Visibility="{Binding NodesExpanded, Converter={StaticResource Vis}}" />
+        <Button Style="{StaticResource QuietButton}" Command="{Binding ToggleMembers}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,0" Height="24"
+                Visibility="{Binding OutlineIsEmpty, Converter={StaticResource Vis}, ConverterParameter=invert}">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <c:Icon Kind="{x:Bind Chevron(Editor.Outline.MembersExpanded), Mode=OneWay}" Width="12" Height="12" Foreground="{StaticResource InkTertiaryBrush}" />
-            <TextBlock Text="{x:Bind Editor.Outline.MembersHeader, Mode=OneWay}" Style="{StaticResource CaptionText}" Foreground="{StaticResource InkSecondaryBrush}" />
+            <c:Icon Kind="chevron-down" Width="12" Height="12" Foreground="{StaticResource InkTertiaryBrush}" Visibility="{Binding MembersExpanded, Converter={StaticResource Vis}}" />
+            <c:Icon Kind="chevron-right" Width="12" Height="12" Foreground="{StaticResource InkTertiaryBrush}" Visibility="{Binding MembersExpanded, Converter={StaticResource Vis}, ConverterParameter=invert}" />
+            <TextBlock Text="{Binding MembersHeader}" Style="{StaticResource CaptionText}" Foreground="{StaticResource InkSecondaryBrush}" />
           </StackPanel>
-        </Border>
-        <ItemsControl ItemsSource="{x:Bind Editor.Outline.Members, Mode=OneWay}" ItemTemplate="{StaticResource OutlineRow}" Visibility="{x:Bind c:Fmt.Vis(Editor.Outline.MembersExpanded), Mode=OneWay}" />
+        </Button>
+        <ItemsControl ItemsSource="{Binding OutlineMembers}" ItemTemplate="{StaticResource OutlineRow}" Visibility="{Binding MembersExpanded, Converter={StaticResource Vis}}" />
       </StackPanel>
     </ScrollViewer>
   </Grid>

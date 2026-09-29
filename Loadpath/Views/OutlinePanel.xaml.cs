@@ -7,43 +7,32 @@ namespace Loadpath.Views;
 
 public sealed partial class OutlinePanel : UserControl
 {
-    public static readonly DependencyProperty EditorProperty = DependencyProperty.Register(
-        nameof(Editor), typeof(EditorViewModel), typeof(OutlinePanel), new PropertyMetadata(null));
+    public static readonly DependencyProperty EngineProperty = DependencyProperty.Register(
+        nameof(Engine), typeof(EditorEngine), typeof(OutlinePanel), new PropertyMetadata(null));
 
     public OutlinePanel() => InitializeComponent();
 
-    public EditorViewModel? Editor
+    /// <summary>Pointer gestures on rows (press, hover) talk to the engine directly; rows carry their element key in Tag.</summary>
+    public EditorEngine? Engine
     {
-        get => (EditorViewModel?)GetValue(EditorProperty);
-        set => SetValue(EditorProperty, value);
+        get => (EditorEngine?)GetValue(EngineProperty);
+        set => SetValue(EngineProperty, value);
     }
-
-    public string Chevron(bool expanded) => expanded ? "chevron-down" : "chevron-right";
 
     private void OnRowPressed(object sender, PointerRoutedEventArgs e)
     {
-        if (sender is FrameworkElement { Tag: OutlineItem item } && Editor is not null)
+        if (sender is FrameworkElement { Tag: string key } && Engine is not null)
         {
-            var shift = e.KeyModifiers.HasFlag(Windows.System.VirtualKeyModifiers.Shift) || e.KeyModifiers.HasFlag(Windows.System.VirtualKeyModifiers.Control);
-            Editor.Outline.Select(item, shift);
+            var extend = e.KeyModifiers.HasFlag(Windows.System.VirtualKeyModifiers.Shift) || e.KeyModifiers.HasFlag(Windows.System.VirtualKeyModifiers.Control);
+            Engine.SelectByKey(key, extend);
             e.Handled = true;
         }
     }
 
     private void OnRowEntered(object sender, PointerRoutedEventArgs e)
     {
-        if (sender is FrameworkElement { Tag: OutlineItem item }) Editor?.Outline.Hover(item);
+        if (sender is FrameworkElement { Tag: string key }) Engine?.HoverByKey(key);
     }
 
-    private void OnRowExited(object sender, PointerRoutedEventArgs e) => Editor?.Outline.Hover(null);
-
-    private void OnToggleNodes(object sender, TappedRoutedEventArgs e)
-    {
-        if (Editor is not null) Editor.Outline.NodesExpanded = !Editor.Outline.NodesExpanded;
-    }
-
-    private void OnToggleMembers(object sender, TappedRoutedEventArgs e)
-    {
-        if (Editor is not null) Editor.Outline.MembersExpanded = !Editor.Outline.MembersExpanded;
-    }
+    private void OnRowExited(object sender, PointerRoutedEventArgs e) => Engine?.HoverByKey(null);
 }

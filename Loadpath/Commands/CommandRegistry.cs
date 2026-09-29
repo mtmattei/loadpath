@@ -33,12 +33,12 @@ public sealed class CommandRegistry
     {
         foreach (var (s, c) in _shortcuts)
         {
-            if (s.Key == key && s.Ctrl == ctrl && s.Shift == shift && s.Alt == alt) return c;
+            if (s.KeyCode == key && s.Ctrl == ctrl && s.Shift == shift && s.Alt == alt) return c;
         }
         return null;
     }
 
-    public readonly record struct Shortcut(VirtualKey Key, bool Ctrl, bool Shift, bool Alt)
+    public readonly record struct Shortcut(VirtualKey KeyCode, bool Ctrl, bool Shift, bool Alt)
     {
         public static bool TryParse(string text, out Shortcut shortcut)
         {

@@ -19,7 +19,7 @@
     -->
     <UnoFeatures>
       SkiaRenderer;
-      Mvvm;
+      MVUX;
     </UnoFeatures>
   </PropertyGroup>
 

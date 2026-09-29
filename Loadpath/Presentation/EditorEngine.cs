@@ -8,12 +8,12 @@ using Loadpath.Workspace;
 namespace Loadpath.Presentation;
 
 /// <summary>
-/// Composes the document, history, selection, viewport and analysis into one observable editor.
-/// Sub-viewmodels (inspector, outline, status) listen to the same objects; they never mutate the document directly.
+/// The imperative editor: document, history, selection, viewport, analysis, tools and the command registry.
+/// It raises events; EditorModel projects them into MVUX states for the views. Nothing here is bound to XAML.
 /// </summary>
-public sealed partial class EditorViewModel : ObservableObject
+public sealed class EditorEngine
 {
-    public EditorViewModel()
+    public EditorEngine()
     {
         Document = new StructureDocument();
         History = new EditHistory(Document);
@@ -25,15 +25,12 @@ public sealed partial class EditorViewModel : ObservableObject
         Interaction = new WorkspaceInteraction(this);
         Analysis = AnalysisResult.EmptyResult;
 
-        Document.Changed += (_, e) => OnDocumentChanged(e);
-        Selection.Changed += (_, _) => OnSelectionChanged();
-        History.Changed += (_, _) => OnHistoryChanged();
+        Document.Changed += (_, _) => OnDocumentChanged();
+        Selection.Changed += (_, _) => { SelectionChanged?.Invoke(this, EventArgs.Empty); RequestRender(); };
+        History.Changed += (_, _) => HistoryChanged?.Invoke(this, EventArgs.Empty);
         Viewport.Changed += (_, _) => ViewportChanged?.Invoke(this, EventArgs.Empty);
-        Options.PropertyChanged += (_, e) => OnOptionsChanged(e.PropertyName);
+        Options.Changed += (_, name) => OnOptionsChanged(name);
         Snap.GridStep = Options.GridStep;
-
-        Inspector = new InspectorViewModel(this);
-        Outline = new OutlineViewModel(this);
         RegisterCommands();
     }
 
@@ -45,121 +42,45 @@ public sealed partial class EditorViewModel : ObservableObject
     public ViewOptions Options { get; }
     public CommandRegistry Commands { get; }
     public WorkspaceInteraction Interaction { get; }
-    public InspectorViewModel Inspector { get; }
-    public OutlineViewModel Outline { get; }
+    public AnalysisResult Analysis { get; private set; }
+    public string? FilePath { get; set; }
+    public bool IsDirty => History.Version != _savedVersion;
+    public bool HasSelection => !Selection.IsEmpty;
 
     /// <summary>Raised after every document change, once the analysis has been recomputed.</summary>
     public event EventHandler? AnalysisChanged;
     public event EventHandler? SelectionChanged;
+    public event EventHandler? HistoryChanged;
     public event EventHandler? ViewportChanged;
-    public event EventHandler? OptionsChanged;
+    public event EventHandler<string>? OptionsChanged;
     /// <summary>The workspace should redraw (hover, overlays, options).</summary>
     public event EventHandler? RenderRequested;
     public event EventHandler<string>? ToastRequested;
     public event EventHandler? FitRequested;
-
-    [ObservableProperty] private AnalysisResult _analysis;
-    [ObservableProperty] private string _documentName = "Untitled";
-    [ObservableProperty] private string? _filePath;
-    [ObservableProperty] private bool _isDirty;
-    [ObservableProperty] private bool _canUndo;
-    [ObservableProperty] private bool _canRedo;
-    [ObservableProperty] private string _undoTooltip = "Undo";
-    [ObservableProperty] private string _redoTooltip = "Redo";
-    [ObservableProperty] private string _statusText = "";
-    [ObservableProperty] private string _statusDetail = "";
-    [ObservableProperty] private bool _isStatusDanger;
-    [ObservableProperty] private bool _isStatusMuted;
-    [ObservableProperty] private string _maxUtilizationText = "—";
-    [ObservableProperty] private bool _isEmpty = true;
-    [ObservableProperty] private bool _isMechanism;
-    [ObservableProperty] private string _mechanismText = "";
-    [ObservableProperty] private bool _hasDetached;
-    [ObservableProperty] private string _detachedText = "";
-    [ObservableProperty] private bool _isPaletteOpen;
+    public event EventHandler? PaletteRequested;
+    public event EventHandler? SavedStateChanged;
 
     private int _savedVersion;
-
-    public bool HasSelection => !Selection.IsEmpty;
 
     public void RequestRender() => RenderRequested?.Invoke(this, EventArgs.Empty);
     public void Toast(string message) => ToastRequested?.Invoke(this, message);
     public void RequestFit() => FitRequested?.Invoke(this, EventArgs.Empty);
+    public void RequestPalette() => PaletteRequested?.Invoke(this, EventArgs.Empty);
 
-    // ---- change propagation ----
-
-    private void OnDocumentChanged(DocumentChange change)
+    private void OnDocumentChanged()
     {
         Selection.Prune(Document);
-        Recompute();
-        IsEmpty = Document.Nodes.Count == 0;
-        DocumentName = Document.Name;
-        IsDirty = History.Version != _savedVersion;
+        Analysis = TrussSolver.Solve(Document);
         AnalysisChanged?.Invoke(this, EventArgs.Empty);
         RequestRender();
     }
 
-    private void OnSelectionChanged()
-    {
-        OnPropertyChanged(nameof(HasSelection));
-        SelectionChanged?.Invoke(this, EventArgs.Empty);
-        RequestRender();
-    }
-
-    private void OnHistoryChanged()
-    {
-        CanUndo = History.CanUndo;
-        CanRedo = History.CanRedo;
-        UndoTooltip = History.UndoLabel is { } u ? $"Undo {u.ToLowerInvariant()}" : "Nothing to undo";
-        RedoTooltip = History.RedoLabel is { } r ? $"Redo {r.ToLowerInvariant()}" : "Nothing to redo";
-        IsDirty = History.Version != _savedVersion;
-    }
-
-    private void OnOptionsChanged(string? name)
+    private void OnOptionsChanged(string name)
     {
         if (name == nameof(ViewOptions.GridStep)) Snap.GridStep = Options.GridStep;
         if (name == nameof(ViewOptions.SnapEnabled)) Snap.GridEnabled = Options.SnapEnabled;
-        OptionsChanged?.Invoke(this, EventArgs.Empty);
+        OptionsChanged?.Invoke(this, name);
         RequestRender();
-    }
-
-    private void Recompute()
-    {
-        Analysis = TrussSolver.Solve(Document);
-        switch (Analysis.Status)
-        {
-            case AnalysisStatus.Empty:
-                StatusText = "Empty";
-                StatusDetail = "Place a node to begin";
-                IsStatusDanger = false; IsStatusMuted = true; IsMechanism = false;
-                break;
-            case AnalysisStatus.NoLoads:
-                StatusText = "No loads";
-                StatusDetail = "Add a load (L) to see forces";
-                IsStatusDanger = false; IsStatusMuted = true; IsMechanism = false;
-                break;
-            case AnalysisStatus.Unsupported:
-                StatusText = "Unsupported";
-                StatusDetail = "At least a pin and a roller are needed";
-                IsStatusDanger = true; IsStatusMuted = false; IsMechanism = true;
-                MechanismText = "Unsupported — the structure can move freely. Add a pin and a roller (S).";
-                break;
-            case AnalysisStatus.Mechanism:
-                StatusText = "Mechanism";
-                StatusDetail = "The structure can move freely";
-                IsStatusDanger = true; IsStatusMuted = false; IsMechanism = true;
-                MechanismText = "Mechanism — the structure can move freely. Triangulate it or add a support.";
-                break;
-            default:
-                StatusText = Analysis.MaxUtilization >= 1 ? "Overstressed" : "Solved";
-                StatusDetail = $"{Analysis.SolveMilliseconds:0.0} ms";
-                IsStatusDanger = Analysis.MaxUtilization >= 1; IsStatusMuted = false; IsMechanism = false;
-                break;
-        }
-        MaxUtilizationText = Analysis.IsSolved ? $"{Analysis.MaxUtilization * 100:0}%" : "—";
-        HasDetached = Analysis.HasDetached && !IsMechanism;
-        var d = Analysis.DetachedNodeIds.Count;
-        DetachedText = d == 1 ? "1 node is not connected to a support and carries nothing." : $"{d} nodes are not connected to a support and carry nothing.";
     }
 
     // ---- document lifecycle ----
@@ -167,7 +88,7 @@ public sealed partial class EditorViewModel : ObservableObject
     public void MarkSaved()
     {
         _savedVersion = History.Version;
-        IsDirty = false;
+        SavedStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public void LoadSnapshot(DocumentSnapshot snapshot, string label, string? filePath)
@@ -183,12 +104,9 @@ public sealed partial class EditorViewModel : ObservableObject
 
     public void LoadSample(string id) => LoadSnapshot(SampleStructures.Build(id), "Load sample", null);
 
-    public void NewDocument()
-    {
-        LoadSnapshot(new DocumentSnapshot { Name = "Untitled", Nodes = [], Members = [] }, "New", null);
-    }
+    public void NewDocument() => LoadSnapshot(new DocumentSnapshot { Name = "Untitled", Nodes = [], Members = [] }, "New", null);
 
-    // ---- editing helpers used by commands and inspectors ----
+    // ---- editing helpers used by commands, tools and the model ----
 
     public void DeleteSelection()
     {
@@ -201,12 +119,12 @@ public sealed partial class EditorViewModel : ObservableObject
     public void DuplicateSelection()
     {
         if (Selection.IsEmpty) { Toast("Nothing selected"); return; }
-        var edit = new DuplicateEdit(Selection.NodeIds, Selection.MemberIds, new Core.Geometry.Vec2(Options.GridStep, -Options.GridStep));
+        var edit = new DuplicateEdit(Selection.NodeIds, Selection.MemberIds, new Vec2(Options.GridStep, -Options.GridStep));
         History.Do(edit);
         Selection.Replace(edit.CreatedRefs);
     }
 
-    public void NudgeSelection(Core.Geometry.Vec2 delta)
+    public void NudgeSelection(Vec2 delta)
     {
         var nodes = SelectedNodeIdsIncludingMemberEnds().ToList();
         if (nodes.Count == 0) return;
@@ -235,12 +153,28 @@ public sealed partial class EditorViewModel : ObservableObject
         History.CommitTransaction();
     }
 
+    public void CycleSupportOnSelection()
+    {
+        var ids = Selection.NodeIds.ToList();
+        if (ids.Count == 0) return;
+        SetSupportOnSelection(Document.GetNode(ids[0]).Support.Next());
+    }
+
+    public void AddDefaultLoadOnSelection()
+    {
+        var ids = Selection.NodeIds.ToList();
+        if (ids.Count == 0) { Toast("Select a node first"); return; }
+        History.BeginTransaction("Add load");
+        foreach (var id in ids) History.Do(new SetLoadEdit(id, new Vec2(0, -10)));
+        History.CommitTransaction();
+    }
+
     public void ClearLoadOnSelection()
     {
         var ids = Selection.NodeIds.Where(id => Document.GetNode(id).HasLoad).ToList();
         if (ids.Count == 0) { Toast("No load on the selection"); return; }
         History.BeginTransaction("Clear loads");
-        foreach (var id in ids) History.Do(new SetLoadEdit(id, Core.Geometry.Vec2.Zero));
+        foreach (var id in ids) History.Do(new SetLoadEdit(id, Vec2.Zero));
         History.CommitTransaction();
     }
 
@@ -255,7 +189,7 @@ public sealed partial class EditorViewModel : ObservableObject
     {
         if (Selection.Single is { IsMember: true } r && Document.FindMember(r.Id) is { } m)
         {
-            var mid = Core.Geometry.Vec2.Lerp(Document.GetNode(m.StartNodeId).Position, Document.GetNode(m.EndNodeId).Position, 0.5);
+            var mid = Vec2.Lerp(Document.GetNode(m.StartNodeId).Position, Document.GetNode(m.EndNodeId).Position, 0.5);
             var edit = new SplitMemberEdit(m.Id, mid);
             History.Do(edit);
             Selection.Set(ElementRef.Node(edit.NewNodeId));
@@ -265,11 +199,28 @@ public sealed partial class EditorViewModel : ObservableObject
 
     public void JumpToCritical()
     {
-        if (Analysis.CriticalMemberId is { } id)
-        {
-            Selection.Set(ElementRef.Member(id));
-        }
+        if (Analysis.CriticalMemberId is { } id) Selection.Set(ElementRef.Member(id));
         else Toast("No solved result yet");
+    }
+
+    /// <summary>Select an element by its outline key ("n4", "m12").</summary>
+    public void SelectByKey(string key, bool extend)
+    {
+        if (!TryParseKey(key, out var r)) return;
+        if (extend) Selection.Toggle(r); else Selection.Set(r);
+    }
+
+    public void HoverByKey(string? key)
+    {
+        Interaction.HoverFromOutline(key is not null && TryParseKey(key, out var r) ? r : null);
+    }
+
+    public static bool TryParseKey(string key, out ElementRef r)
+    {
+        r = default;
+        if (key.Length < 2 || !int.TryParse(key.AsSpan(1), out var id)) return false;
+        r = key[0] is 'n' or 'N' ? ElementRef.Node(id) : ElementRef.Member(id);
+        return true;
     }
 
     private void RegisterCommands()
@@ -322,7 +273,7 @@ public sealed partial class EditorViewModel : ObservableObject
         c.Add(new AppCommand("view.grid", "Toggle grid", "View", "Ctrl+G", () => Options.ShowGrid = !Options.ShowGrid));
         c.Add(new AppCommand("view.snap", "Toggle snapping", "View", "G", () => Options.SnapEnabled = !Options.SnapEnabled));
         c.Add(new AppCommand("view.inspector", "Toggle inspector", "View", "Ctrl+\\", () => Options.InspectorVisible = !Options.InspectorVisible, icon: "panel"));
-        c.Add(new AppCommand("view.palette", "Command palette", "View", "Ctrl+K", () => IsPaletteOpen = !IsPaletteOpen, icon: "search"));
+        c.Add(new AppCommand("view.palette", "Command palette", "View", "Ctrl+K", RequestPalette, icon: "search"));
 
         foreach (var (id, title, _) in SampleStructures.Catalog)
         {

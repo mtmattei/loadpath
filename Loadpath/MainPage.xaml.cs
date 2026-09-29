@@ -29,18 +29,31 @@ public sealed partial class MainPage : Page
 
     public MainPage()
     {
-        Editor = new EditorViewModel();
+        Engine = new EditorEngine();
         _settingsModel = Environment.GetEnvironmentVariable("LOADPATH_RESET") == "1" ? new SettingsService.Model() : _settings.Load();
-        _settings.Apply(_settingsModel, Editor.Options);
+        _settings.Apply(_settingsModel, Engine.Options);
         RegisterFileCommands();
         InitializeComponent();
 
-        Editor.ToastRequested += (_, msg) => ShowToast(msg);
-        Editor.SelectionChanged += (_, _) => { UpdateFloatingBar(); FadeInspector(); };
-        Editor.ViewportChanged += (_, _) => UpdateFloatingBar();
-        Editor.AnalysisChanged += (_, _) => { UpdateFloatingBar(); ScheduleAutosave(); };
-        Editor.Options.PropertyChanged += (_, _) => { ApplyInspectorVisibility(); PersistSettings(); };
-        Editor.Interaction.ToolChanged += (_, _) => UpdateFloatingBar();
+        // MVUX: the generated view model is the binding surface; the engine stays reachable for pointer-level code.
+        var viewModel = new EditorViewModel(Engine);
+        Model = viewModel.Model;
+        DataContext = viewModel;
+        Workspace.Editor = Engine;
+        Outline.Engine = Engine;
+        Palette.Model = Model;
+        Model.IsPaletteOpen.ForEach(async (open, ct) =>
+        {
+            if (open) Palette.OnOpened();
+            else KeySink.Focus(FocusState.Programmatic);
+        });
+
+        Engine.ToastRequested += (_, msg) => ShowToast(msg);
+        Engine.SelectionChanged += (_, _) => { UpdateFloatingBar(); FadeInspector(); EnsureKeyboardTarget(); };
+        Engine.ViewportChanged += (_, _) => UpdateFloatingBar();
+        Engine.AnalysisChanged += (_, _) => { UpdateFloatingBar(); ScheduleAutosave(); };
+        Engine.OptionsChanged += (_, _) => { ApplyInspectorVisibility(); PersistSettings(); };
+        Engine.Interaction.ToolChanged += (_, _) => UpdateFloatingBar();
         Workspace.ContextMenuRequested += OnContextMenuRequested;
         Workspace.FocusRequested += (_, _) => KeySink.Focus(FocusState.Programmatic);
         Inspector.SectionDragStarted += OnSectionDragStarted;
@@ -55,6 +68,7 @@ public sealed partial class MainPage : Page
         {
             Root.AddHandler(PointerWheelChangedEvent, new PointerEventHandler((_, e) => File.AppendAllText(tracePath, $"page wheel {e.GetCurrentPoint(Root).Properties.MouseWheelDelta} src={e.OriginalSource?.GetType().Name}\n")), true);
             Root.AddHandler(PointerPressedEvent, new PointerEventHandler((_, e) => File.AppendAllText(tracePath, $"page press src={e.OriginalSource?.GetType().Name} pid={e.Pointer.PointerId}\n")), true);
+            Root.GotFocus += (_, e) => File.AppendAllText(tracePath, $"focus -> {e.OriginalSource?.GetType().Name}\n");
         }
 #endif
         Root.AddHandler(KeyUpEvent, new KeyEventHandler(OnRootKeyUp), true);
@@ -62,7 +76,8 @@ public sealed partial class MainPage : Page
         ApplyInspectorVisibility();
     }
 
-    public EditorViewModel Editor { get; }
+    public EditorEngine Engine { get; }
+    public EditorModel Model { get; }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
@@ -108,15 +123,15 @@ public sealed partial class MainPage : Page
     private void ApplyResponsiveLayout(double width)
     {
         if (width <= 0) return;
-        if (width < 1100 && Editor.Options.InspectorVisible)
+        if (width < 1100 && Engine.Options.InspectorVisible)
         {
             _autoCollapsedInspector = true;
-            Editor.Options.InspectorVisible = false;
+            Engine.Options.InspectorVisible = false;
         }
-        else if (width >= 1100 && _autoCollapsedInspector && !Editor.Options.InspectorVisible)
+        else if (width >= 1100 && _autoCollapsedInspector && !Engine.Options.InspectorVisible)
         {
             _autoCollapsedInspector = false;
-            Editor.Options.InspectorVisible = true;
+            Engine.Options.InspectorVisible = true;
         }
         Rail.Visibility = width < 640 ? Visibility.Collapsed : Visibility.Visible;
     }
@@ -128,14 +143,14 @@ public sealed partial class MainPage : Page
         var sample = Environment.GetEnvironmentVariable("LOADPATH_SAMPLE");
         if (!string.IsNullOrEmpty(sample))
         {
-            Editor.LoadSample(sample);
+            Engine.LoadSample(sample);
         }
         else if (Environment.GetEnvironmentVariable("LOADPATH_RESET") != "1" && File.Exists(_settings.AutosavePath))
         {
             try
             {
                 var snap = DocumentSerializer.Deserialize(File.ReadAllText(_settings.AutosavePath));
-                if (snap.Nodes.Count > 0) Editor.LoadSnapshot(snap, "Restore", _settingsModel.LastFilePath);
+                if (snap.Nodes.Count > 0) Engine.LoadSnapshot(snap, "Restore", _settingsModel.LastFilePath);
             }
             catch { /* a bad autosave is discarded */ }
         }
@@ -153,7 +168,7 @@ public sealed partial class MainPage : Page
         {
             var refs = select.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim())
                 .Select(s => s[0] is 'n' or 'N' ? ElementRef.Node(int.Parse(s[1..])) : ElementRef.Member(int.Parse(s[1..])));
-            Editor.Selection.Replace(refs);
+            Engine.Selection.Replace(refs);
         }
         var mode = Environment.GetEnvironmentVariable("LOADPATH_MODE");
         if (!string.IsNullOrEmpty(mode))
@@ -162,32 +177,47 @@ public sealed partial class MainPage : Page
             {
                 switch (m.Trim().ToLowerInvariant())
                 {
-                    case "utilization": Editor.Options.DisplayMode = DisplayMode.Utilization; break;
-                    case "forces": Editor.Options.DisplayMode = DisplayMode.Forces; break;
-                    case "deflection": Editor.Options.ShowDeflection = true; break;
-                    case "reactions": Editor.Options.ShowReactions = true; break;
-                    case "nolabels": Editor.Options.ShowLabels = false; break;
+                    case "utilization": Engine.Options.DisplayMode = DisplayMode.Utilization; break;
+                    case "forces": Engine.Options.DisplayMode = DisplayMode.Forces; break;
+                    case "deflection": Engine.Options.ShowDeflection = true; break;
+                    case "reactions": Engine.Options.ShowReactions = true; break;
+                    case "nolabels": Engine.Options.ShowLabels = false; break;
                 }
             }
         }
         var tool = Environment.GetEnvironmentVariable("LOADPATH_TOOL");
-        if (!string.IsNullOrEmpty(tool) && Enum.TryParse<ToolKind>(tool, true, out var kind)) Editor.Interaction.SetTool(kind);
-        if (Environment.GetEnvironmentVariable("LOADPATH_PALETTE") == "1") Editor.IsPaletteOpen = true;
+        if (!string.IsNullOrEmpty(tool) && Enum.TryParse<ToolKind>(tool, true, out var kind)) Engine.Interaction.SetTool(kind);
+        if (Environment.GetEnvironmentVariable("LOADPATH_PALETTE") == "1") _ = Model.TogglePalette(default);
         var toast = Environment.GetEnvironmentVariable("LOADPATH_TOAST");
         if (!string.IsNullOrEmpty(toast)) ShowToast(toast);
         var edit = Environment.GetEnvironmentVariable("LOADPATH_EDIT");
-        if (edit == "unsupported" && Editor.Document.Nodes.Count > 0)
+        if (edit == "unsupported" && Engine.Document.Nodes.Count > 0)
         {
-            foreach (var n in Editor.Document.Nodes.Where(n => n.HasSupport).ToList()) Editor.History.Do(new SetSupportEdit(n.Id, SupportKind.None));
+            foreach (var n in Engine.Document.Nodes.Where(n => n.HasSupport).ToList()) Engine.History.Do(new SetSupportEdit(n.Id, SupportKind.None));
         }
-        if (edit == "overload" && Editor.Document.Nodes.Count > 0)
+        if (edit == "overload" && Engine.Document.Nodes.Count > 0)
         {
-            foreach (var n in Editor.Document.Nodes.Where(n => n.HasLoad).ToList()) Editor.History.Do(new SetLoadEdit(n.Id, n.Load * 6));
+            foreach (var n in Engine.Document.Nodes.Where(n => n.HasLoad).ToList()) Engine.History.Do(new SetLoadEdit(n.Id, n.Load * 6));
         }
     }
 #endif
 
     // ---- keyboard ----
+
+    /// <summary>
+    /// When the focused element leaves the tree (an inspector panel collapses, the palette closes), keyboard events
+    /// have no target. Focus returns to the key sink so shortcuts keep working.
+    /// </summary>
+    private void EnsureKeyboardTarget()
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (XamlRoot is not { } root) return;
+            var focused = FocusManager.GetFocusedElement(root);
+            var detached = focused is FrameworkElement fe && (fe.XamlRoot is null || !fe.IsLoaded || fe.Visibility == Visibility.Collapsed);
+            if (focused is null || detached) KeySink.Focus(FocusState.Programmatic);
+        });
+    }
 
     private static bool IsTextInputFocused(XamlRoot root)
     {
@@ -208,26 +238,26 @@ public sealed partial class MainPage : Page
 
         if (XamlRoot is { } xr && IsTextInputFocused(xr))
         {
-            if (key == VirtualKey.Escape && !Editor.IsPaletteOpen) { KeySink.Focus(FocusState.Programmatic); e.Handled = true; }
+            if (key == VirtualKey.Escape && Palette.Visibility != Visibility.Visible) { KeySink.Focus(FocusState.Programmatic); e.Handled = true; }
             return;
         }
-        if (Editor.IsPaletteOpen)
+        if (Palette.Visibility == Visibility.Visible)
         {
-            if (key == VirtualKey.Escape) { Editor.IsPaletteOpen = false; e.Handled = true; }
+            if (key == VirtualKey.Escape) { _ = Model.ClosePalette(default); e.Handled = true; }
             return;
         }
 
         // Tools get first refusal (Esc cancels a chain or drag).
-        if (!ctrl && !alt && Editor.Interaction.KeyDown(key)) { e.Handled = true; return; }
+        if (!ctrl && !alt && Engine.Interaction.KeyDown(key)) { e.Handled = true; return; }
 
-        var command = Editor.Commands.Resolve(key, ctrl, shift, alt);
+        var command = Engine.Commands.Resolve(key, ctrl, shift, alt);
         if (command is null) return;
         // Tool switches wait for a gesture to end.
-        if (command.Id.StartsWith("tool.") && Editor.Interaction.IsBusy) return;
+        if (command.Id.StartsWith("tool.") && Engine.Interaction.IsBusy) return;
         if (command.TryExecute()) e.Handled = true;
     }
 
-    private void OnRootKeyUp(object sender, KeyRoutedEventArgs e) => Editor.Interaction.KeyUp(e.Key);
+    private void OnRootKeyUp(object sender, KeyRoutedEventArgs e) => Engine.Interaction.KeyUp(e.Key);
 
     private static bool IsDown(VirtualKey key) =>
         Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
@@ -239,10 +269,10 @@ public sealed partial class MainPage : Page
         var menu = new MenuFlyout { Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft };
         void Add(string id, string? title = null)
         {
-            var c = Editor.Commands.Find(id);
+            var c = Engine.Commands.Find(id);
             if (c is null) return;
             var item = new MenuFlyoutItem { Text = title ?? c.Title, IsEnabled = c.CanExecute, KeyboardAcceleratorTextOverride = c.ShortcutDisplay.Split('|')[0] };
-            item.Click += (_, _) => { if (!c.TryExecute()) Editor.Toast($"{c.Title} is not available"); };
+            item.Click += (_, _) => { if (!c.TryExecute()) Engine.Toast($"{c.Title} is not available"); };
             menu.Items.Add(item);
         }
         void Sep() => menu.Items.Add(new MenuFlyoutSeparator());
@@ -264,7 +294,7 @@ public sealed partial class MainPage : Page
                 var sub = new MenuFlyoutSubItem { Text = "Set section" };
                 foreach (var s in Section.Library)
                 {
-                    var c = Editor.Commands[$"section.{s.Id}"];
+                    var c = Engine.Commands[$"section.{s.Id}"];
                     var item = new MenuFlyoutItem { Text = s.Name };
                     item.Click += (_, _) => c.TryExecute();
                     sub.Items.Add(item);
@@ -277,8 +307,8 @@ public sealed partial class MainPage : Page
                 break;
             default:
                 var addNode = new MenuFlyoutItem { Text = "Add node here", KeyboardAcceleratorTextOverride = "N" };
-                var world = Editor.Interaction.SnapPoint(Editor.Viewport.ToWorld(new Vec2(args.Position.X, args.Position.Y)), false).Point;
-                addNode.Click += (_, _) => { var add = new AddNodeEdit(world); Editor.History.Do(add); Editor.Selection.Set(ElementRef.Node(add.NodeId)); };
+                var world = Engine.Interaction.SnapPoint(Engine.Viewport.ToWorld(new Vec2(args.Position.X, args.Position.Y)), false).Point;
+                addNode.Click += (_, _) => { var add = new AddNodeEdit(world); Engine.History.Do(add); Engine.Selection.Set(ElementRef.Node(add.NodeId)); };
                 menu.Items.Add(addNode);
                 Add("edit.selectAll");
                 Sep();
@@ -296,17 +326,17 @@ public sealed partial class MainPage : Page
 
     private void UpdateFloatingBar()
     {
-        var sel = Editor.Selection;
-        if (sel.IsEmpty || Editor.Interaction.ActiveTool != ToolKind.Select || Editor.Interaction.IsBusy)
+        var sel = Engine.Selection;
+        if (sel.IsEmpty || Engine.Interaction.ActiveTool != ToolKind.Select || Engine.Interaction.IsBusy)
         {
             FloatingBar.Visibility = Visibility.Collapsed;
             return;
         }
         // Anchor above the selection's screen bounds.
         var bounds = Bounds.Empty;
-        foreach (var id in Editor.SelectedNodeIdsIncludingMemberEnds())
+        foreach (var id in Engine.SelectedNodeIdsIncludingMemberEnds())
         {
-            if (Editor.Document.FindNode(id) is { } n) bounds = bounds.Include(Editor.Viewport.ToScreen(n.Position));
+            if (Engine.Document.FindNode(id) is { } n) bounds = bounds.Include(Engine.Viewport.ToScreen(n.Position));
         }
         if (bounds.IsEmpty) { FloatingBar.Visibility = Visibility.Collapsed; return; }
         FloatSupport.Visibility = sel.NodeCount > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -321,26 +351,8 @@ public sealed partial class MainPage : Page
         FloatingBar.Margin = new Thickness(x, y, 0, 0);
     }
 
-    private void OnFloatSupport(object sender, RoutedEventArgs e)
-    {
-        var ids = Editor.Selection.NodeIds.ToList();
-        if (ids.Count == 0) return;
-        var next = Editor.Document.GetNode(ids[0]).Support.Next();
-        Editor.SetSupportOnSelection(next);
-    }
 
-    private void OnFloatLoad(object sender, RoutedEventArgs e)
-    {
-        var ids = Editor.Selection.NodeIds.ToList();
-        if (ids.Count == 0) return;
-        Editor.History.BeginTransaction("Add load");
-        foreach (var id in ids) Editor.History.Do(new SetLoadEdit(id, new Vec2(0, -10)));
-        Editor.History.CommitTransaction();
-    }
 
-    private void OnFloatSplit(object sender, RoutedEventArgs e) => Editor.SplitSelectedMember();
-    private void OnFloatDuplicate(object sender, RoutedEventArgs e) => Editor.DuplicateSelection();
-    private void OnFloatDelete(object sender, RoutedEventArgs e) => Editor.DeleteSelection();
 
     // ---- section drag-and-drop (inspector chip → member on canvas) ----
 
@@ -350,7 +362,7 @@ public sealed partial class MainPage : Page
         DragGhostText.Text = section.Name;
         DragGhost.Margin = new Thickness(WorkspaceHost.ActualWidth - 120, 12, 0, 0);
         DragGhost.Visibility = Visibility.Visible;
-        Editor.Interaction.Hint = "Drop on a member to apply the section · Esc cancels";
+        Engine.Interaction.Hint = "Drop on a member to apply the section · Esc cancels";
     }
 
     private void OnHostPointerMoved(object sender, PointerRoutedEventArgs e)
@@ -359,13 +371,13 @@ public sealed partial class MainPage : Page
         var p = e.GetCurrentPoint(WorkspaceHost).Position;
         DragGhost.Margin = new Thickness(p.X + 12, p.Y + 12, 0, 0);
         var canvasPoint = e.GetCurrentPoint(Workspace).Position;
-        var hit = Editor.Interaction.Hit(new Vec2(canvasPoint.X, canvasPoint.Y), includeLoadHandles: false);
+        var hit = Engine.Interaction.Hit(new Vec2(canvasPoint.X, canvasPoint.Y), includeLoadHandles: false);
         var target = hit.Kind == HitKind.Member ? hit.Id : (int?)null;
         if (target != _dropTargetMember)
         {
             _dropTargetMember = target;
-            Editor.Interaction.Overlay.HighlightMember = target;
-            Editor.RequestRender();
+            Engine.Interaction.Overlay.HighlightMember = target;
+            Engine.RequestRender();
         }
     }
 
@@ -375,27 +387,28 @@ public sealed partial class MainPage : Page
         var section = _draggingSection;
         _draggingSection = null;
         DragGhost.Visibility = Visibility.Collapsed;
-        Editor.Interaction.Overlay.HighlightMember = null;
+        Engine.Interaction.Overlay.HighlightMember = null;
         if (_dropTargetMember is { } id)
         {
-            Editor.History.Do(new SetSectionEdit([id], section));
-            Editor.Selection.Set(ElementRef.Member(id));
+            Engine.History.Do(new SetSectionEdit([id], section));
+            Engine.Selection.Set(ElementRef.Member(id));
             ShowToast($"{section.Name} applied to member {id}");
         }
         _dropTargetMember = null;
-        Editor.Interaction.Hint = "";
-        Editor.RequestRender();
+        Engine.Interaction.Hint = "";
+        Engine.RequestRender();
     }
 
     // ---- inspector swap: a quick fade so the eye reads a change, not a flash ----
 
-    private InspectorMode _lastInspectorMode = InspectorMode.Summary;
+    private int _lastInspectorShape;
 
     private void FadeInspector()
     {
-        var mode = Editor.Inspector.Mode;
-        if (mode == _lastInspectorMode) return;
-        _lastInspectorMode = mode;
+        var sel = Engine.Selection;
+        var shape = sel.IsEmpty ? 0 : sel.Single is { IsNode: true } ? 1 : sel.Single is { IsMember: true } ? 2 : 3;
+        if (shape == _lastInspectorShape) return;
+        _lastInspectorShape = shape;
         if (!Loadpath.Workspace.MotionSettings.AnimationsEnabled) return;
         var sb = new Storyboard();
         var fade = new DoubleAnimationUsingKeyFrames();
@@ -445,41 +458,38 @@ public sealed partial class MainPage : Page
     private void ApplyInspectorVisibility()
     {
         if (InspectorColumn is null) return;
-        var visible = Editor.Options.InspectorVisible;
+        var visible = Engine.Options.InspectorVisible;
         InspectorColumn.Width = visible ? new GridLength(280) : new GridLength(0);
         InspectorHost.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // ---- samples ----
 
-    private void OnSampleWarren(object sender, RoutedEventArgs e) => Editor.LoadSample("warren");
-    private void OnSampleCantilever(object sender, RoutedEventArgs e) => Editor.LoadSample("cantilever");
-    private void OnSampleRoof(object sender, RoutedEventArgs e) => Editor.LoadSample("roof");
 
     // ---- files, autosave, settings ----
 
     private void RegisterFileCommands()
     {
-        Editor.Commands.Add(new AppCommand("file.new", "New structure", "File", "Ctrl+N", () => _ = NewAsync(), icon: "new"));
-        Editor.Commands.Add(new AppCommand("file.open", "Open…", "File", "Ctrl+O", () => _ = OpenAsync(), icon: "folder"));
-        Editor.Commands.Add(new AppCommand("file.save", "Save", "File", "Ctrl+S", () => _ = SaveAsync(false), icon: "save"));
-        Editor.Commands.Add(new AppCommand("file.saveAs", "Save as…", "File", "Ctrl+Shift+S", () => _ = SaveAsync(true), icon: "save"));
+        Engine.Commands.Add(new AppCommand("file.new", "New structure", "File", "Ctrl+N", () => _ = NewAsync(), icon: "new"));
+        Engine.Commands.Add(new AppCommand("file.open", "Open…", "File", "Ctrl+O", () => _ = OpenAsync(), icon: "folder"));
+        Engine.Commands.Add(new AppCommand("file.save", "Save", "File", "Ctrl+S", () => _ = SaveAsync(false), icon: "save"));
+        Engine.Commands.Add(new AppCommand("file.saveAs", "Save as…", "File", "Ctrl+Shift+S", () => _ = SaveAsync(true), icon: "save"));
     }
 
     private async Task NewAsync()
     {
-        if (Editor.IsDirty && !await ConfirmDiscardAsync()) return;
-        Editor.NewDocument();
+        if (Engine.IsDirty && !await ConfirmDiscardAsync()) return;
+        Engine.NewDocument();
     }
 
     private async Task OpenAsync()
     {
-        if (Editor.IsDirty && !await ConfirmDiscardAsync()) return;
+        if (Engine.IsDirty && !await ConfirmDiscardAsync()) return;
         try
         {
             var result = await _files.OpenAsync();
             if (result is null) { ShowToast("Nothing opened"); return; }
-            Editor.LoadSnapshot(result.Value.Snapshot, "Open", result.Value.Path);
+            Engine.LoadSnapshot(result.Value.Snapshot, "Open", result.Value.Path);
             _settingsModel.LastFilePath = result.Value.Path;
             PersistSettings();
             ShowToast($"Opened {Path.GetFileName(result.Value.Path)}");
@@ -494,12 +504,11 @@ public sealed partial class MainPage : Page
     {
         try
         {
-            var path = await _files.SaveAsync(Editor.Document, Editor.FilePath, ask);
+            var path = await _files.SaveAsync(Engine.Document, Engine.FilePath, ask);
             if (path is null) return;
-            Editor.FilePath = path;
-            Editor.Document.Name = Path.GetFileNameWithoutExtension(path);
-            Editor.DocumentName = Editor.Document.Name;
-            Editor.MarkSaved();
+            Engine.FilePath = path;
+            Engine.Document.Name = Path.GetFileNameWithoutExtension(path);
+            Engine.MarkSaved();
             _settingsModel.LastFilePath = path;
             PersistSettings();
             ShowToast($"Saved to {path}");
@@ -515,14 +524,14 @@ public sealed partial class MainPage : Page
         var dialog = new ContentDialog
         {
             Title = "Unsaved changes",
-            Content = $"“{Editor.DocumentName}” has changes that are not saved.",
+            Content = $"“{Engine.Document.Name}” has changes that are not saved.",
             PrimaryButtonText = "Save",
             SecondaryButtonText = "Discard",
             CloseButtonText = "Cancel",
             XamlRoot = XamlRoot,
         };
         var result = await dialog.ShowAsync();
-        if (result == ContentDialogResult.Primary) { await SaveAsync(false); return !Editor.IsDirty; }
+        if (result == ContentDialogResult.Primary) { await SaveAsync(false); return !Engine.IsDirty; }
         return result == ContentDialogResult.Secondary;
     }
 
@@ -538,12 +547,12 @@ public sealed partial class MainPage : Page
     private void OnAutosaveTick(object? sender, object e)
     {
         _autosaveTimer?.Stop();
-        try { File.WriteAllText(_settings.AutosavePath, DocumentSerializer.Serialize(Editor.Document)); } catch { /* best effort */ }
+        try { File.WriteAllText(_settings.AutosavePath, DocumentSerializer.Serialize(Engine.Document)); } catch { /* best effort */ }
     }
 
     private void PersistSettings()
     {
-        _settings.Capture(Editor.Options, _settingsModel);
+        _settings.Capture(Engine.Options, _settingsModel);
         _settings.Save(_settingsModel);
     }
 }

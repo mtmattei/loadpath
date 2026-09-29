@@ -105,7 +105,7 @@ public sealed class WorkspaceRenderer : IDisposable
         // Selection halos first so ribbons sit on top of them.
         foreach (ref readonly var m in s.Members.AsSpan())
         {
-            if (!m.Selected && !m.Hovered && s.Overlay.HighlightMember != m.Id) continue;
+            if (!m.Selected && !m.Hovered && s.Overlay.HighlightMember != m.ElementId) continue;
             var w = RibbonWidth(s, m);
             _stroke.StrokeWidth = w + 8;
             _stroke.Color = m.Selected ? SkiaPalette.Accent.WithAlpha(0.35) : SkiaPalette.Ink.WithAlpha(0.18);
@@ -346,7 +346,7 @@ public sealed class WorkspaceRenderer : IDisposable
         {
             foreach (ref readonly var n in s.Nodes.AsSpan())
             {
-                if (n.Id != flash) continue;
+                if (n.ElementId != flash) continue;
                 _stroke.StrokeWidth = 1.5f;
                 _stroke.Color = SkiaPalette.Accent.WithAlpha(0.8);
                 canvas.DrawCircle(n.Screen, 11, _stroke);

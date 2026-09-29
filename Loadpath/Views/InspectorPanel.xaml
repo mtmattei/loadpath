@@ -2,7 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Loadpath.Controls"
-             xmlns:m="using:Loadpath.Core.Model">
+             x:Name="Panel">
   <UserControl.Resources>
     <Style x:Key="Row" TargetType="Grid">
       <Setter Property="Height" Value="28" />
@@ -11,141 +11,140 @@
   </UserControl.Resources>
 
   <StackPanel Padding="12,10,12,12" Spacing="0">
-    <!-- Header -->
-    <TextBlock Text="{x:Bind Editor.Inspector.Title, Mode=OneWay}" Style="{StaticResource TitleText}" />
-    <TextBlock Text="{x:Bind Editor.Inspector.Subtitle, Mode=OneWay}" Style="{StaticResource SecondaryText}" Margin="0,2,0,12" />
+    <TextBlock Text="{Binding Inspector.Title}" Style="{StaticResource TitleText}" />
+    <TextBlock Text="{Binding Inspector.Subtitle}" Style="{StaticResource SecondaryText}" Margin="0,2,0,12" />
 
     <!-- ===== Summary ===== -->
-    <StackPanel Visibility="{x:Bind c:Fmt.Vis(Editor.Inspector.IsSummary), Mode=OneWay}" Spacing="0">
+    <StackPanel Visibility="{Binding Inspector.IsSummary, Converter={StaticResource Vis}}" Spacing="0">
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Nodes" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.NodeCountText, Mode=OneWay}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.NodeCountText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
       </Grid>
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Members" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.MemberCountText, Mode=OneWay}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.MemberCountText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
       </Grid>
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Supports" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.SupportsText, Mode=OneWay}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.SupportsText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
       </Grid>
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Applied load" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.TotalLoadText, Mode=OneWay}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.TotalLoadText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
       </Grid>
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Steel mass" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.MassText, Mode=OneWay}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.MassText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
       </Grid>
 
       <TextBlock Text="RESULT" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" />
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Max utilization" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.MaxUtilText, Mode=OneWay}" Style="{StaticResource ValueText}" Foreground="{x:Bind c:Fmt.UtilBrush(Editor.Analysis.MaxUtilization), Mode=OneWay}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.MaxUtilText}" Style="{StaticResource ValueText}" Foreground="{Binding Inspector.MaxUtilToneKey, Converter={StaticResource Brush}}" VerticalAlignment="Center" />
       </Grid>
-      <c:UtilizationBar Value="{x:Bind Editor.Inspector.MaxUtil, Mode=OneWay}" Foreground="{x:Bind c:Fmt.UtilBrush(Editor.Analysis.MaxUtilization), Mode=OneWay}" Margin="0,0,0,8" />
+      <c:UtilizationBar Value="{Binding Inspector.MaxUtil}" Foreground="{Binding Inspector.MaxUtilToneKey, Converter={StaticResource Brush}}" Margin="0,0,0,8" />
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Max deflection" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.MaxDeflectionText, Mode=OneWay}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.MaxDeflectionText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
       </Grid>
-      <Button Style="{StaticResource OutlineButton}" Click="OnJumpCritical" HorizontalAlignment="Stretch" Margin="0,6,0,0"
-              Visibility="{x:Bind c:Fmt.Vis(Editor.Inspector.HasCritical), Mode=OneWay}" AutomationProperties.Name="Jump to critical member">
+      <Button Style="{StaticResource OutlineButton}" Command="{Binding JumpToCritical}" HorizontalAlignment="Stretch" Margin="0,6,0,0"
+              Visibility="{Binding Inspector.HasCritical, Converter={StaticResource Vis}}" AutomationProperties.Name="Jump to critical member">
         <StackPanel Orientation="Horizontal" Spacing="8">
           <c:Icon Kind="target" Width="14" Height="14" />
-          <TextBlock Text="{x:Bind Editor.Inspector.CriticalText, Mode=OneWay}" Style="{StaticResource BodyText}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Inspector.CriticalText}" Style="{StaticResource BodyText}" VerticalAlignment="Center" />
         </StackPanel>
       </Button>
 
-      <TextBlock Text="REACTIONS" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" Visibility="{x:Bind c:Fmt.VisText(Editor.Inspector.ReactionsText), Mode=OneWay}" />
-      <TextBlock Text="{x:Bind Editor.Inspector.ReactionsText, Mode=OneWay}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkSecondaryBrush}" LineHeight="18" Visibility="{x:Bind c:Fmt.VisText(Editor.Inspector.ReactionsText), Mode=OneWay}" />
+      <TextBlock Text="REACTIONS" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" Visibility="{Binding Inspector.ReactionsText, Converter={StaticResource VisText}}" />
+      <TextBlock Text="{Binding Inspector.ReactionsText}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkSecondaryBrush}" LineHeight="18" Visibility="{Binding Inspector.ReactionsText, Converter={StaticResource VisText}}" />
 
-      <TextBlock Text="{x:Bind Editor.Inspector.SummaryHint, Mode=OneWay}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,16,0,0" />
+      <TextBlock Text="{Binding Inspector.SummaryHint}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,16,0,0" />
     </StackPanel>
 
     <!-- ===== Node ===== -->
-    <StackPanel Visibility="{x:Bind c:Fmt.Vis(Editor.Inspector.IsNode), Mode=OneWay}" Spacing="0">
+    <StackPanel Visibility="{Binding Inspector.IsNode, Converter={StaticResource Vis}}" Spacing="0">
       <TextBlock Text="POSITION" Style="{StaticResource SectionLabel}" Margin="0,0,0,6" />
       <Grid ColumnSpacing="8">
         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
         <TextBlock Text="x" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
-        <c:NumberField Grid.Column="1" Value="{x:Bind Editor.Inspector.NodeX, Mode=TwoWay}" Unit="m" Decimals="3" Step="0.5" Committed="OnPositionCommitted" AutomationProperties.Name="Node X" />
+        <c:NumberField Grid.Column="1" Value="{Binding NodeX, Mode=TwoWay}" Unit="m" Decimals="3" Step="0.5" AutomationProperties.Name="Node X" />
         <TextBlock Grid.Column="2" Text="y" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
-        <c:NumberField Grid.Column="3" Value="{x:Bind Editor.Inspector.NodeY, Mode=TwoWay}" Unit="m" Decimals="3" Step="0.5" Committed="OnPositionCommitted" AutomationProperties.Name="Node Y" />
+        <c:NumberField Grid.Column="3" Value="{Binding NodeY, Mode=TwoWay}" Unit="m" Decimals="3" Step="0.5" AutomationProperties.Name="Node Y" />
       </Grid>
 
       <TextBlock Text="SUPPORT" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" />
       <StackPanel Orientation="Horizontal" Spacing="2">
-        <ToggleButton Style="{StaticResource SegmentToggle}" Content="None" IsChecked="{x:Bind Editor.Inspector.IsFree, Mode=OneWay}" Click="OnSupportNone" />
-        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Pin" IsChecked="{x:Bind Editor.Inspector.IsPin, Mode=OneWay}" Click="OnSupportPin" />
-        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Roller" IsChecked="{x:Bind Editor.Inspector.IsRoller, Mode=OneWay}" Click="OnSupportRoller" />
-        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Roller ↕" IsChecked="{x:Bind Editor.Inspector.IsRollerX, Mode=OneWay}" Click="OnSupportRollerX" ToolTipService.ToolTip="Fixed in X, free in Y" />
+        <ToggleButton Style="{StaticResource SegmentToggle}" Content="None" IsChecked="{Binding Inspector.IsFree}" Command="{Binding SupportNone}" />
+        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Pin" IsChecked="{Binding Inspector.IsPin}" Command="{Binding SupportPin}" />
+        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Roller" IsChecked="{Binding Inspector.IsRoller}" Command="{Binding SupportRoller}" />
+        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Roller ↕" IsChecked="{Binding Inspector.IsRollerX}" Command="{Binding SupportRollerX}" ToolTipService.ToolTip="Fixed in X, free in Y" />
       </StackPanel>
-      <Grid Style="{StaticResource Row}" Visibility="{x:Bind c:Fmt.Vis(Editor.Inspector.HasReaction), Mode=OneWay}">
+      <Grid Style="{StaticResource Row}" Visibility="{Binding Inspector.HasReaction, Converter={StaticResource Vis}}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Reaction" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.ReactionText, Mode=OneWay}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.ReactionText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
       </Grid>
 
       <TextBlock Text="LOAD" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" />
       <Grid ColumnSpacing="8">
         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
         <TextBlock Text="Fx" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
-        <c:NumberField Grid.Column="1" Value="{x:Bind Editor.Inspector.LoadX, Mode=TwoWay}" Unit="kN" Decimals="1" Step="1" Committed="OnLoadCommitted" AutomationProperties.Name="Load X" />
+        <c:NumberField Grid.Column="1" Value="{Binding LoadX, Mode=TwoWay}" Unit="kN" Decimals="1" Step="1" AutomationProperties.Name="Load X" />
         <TextBlock Grid.Column="2" Text="Fy" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
-        <c:NumberField Grid.Column="3" Value="{x:Bind Editor.Inspector.LoadY, Mode=TwoWay}" Unit="kN" Decimals="1" Step="1" Committed="OnLoadCommitted" AutomationProperties.Name="Load Y" />
+        <c:NumberField Grid.Column="3" Value="{Binding LoadY, Mode=TwoWay}" Unit="kN" Decimals="1" Step="1" AutomationProperties.Name="Load Y" />
       </Grid>
       <TextBlock Text="Negative Fy is downward. Drag the arrow tail on the canvas to aim it." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,6,0,0" />
 
       <TextBlock Text="CONNECTED" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" />
-      <TextBlock Text="{x:Bind Editor.Inspector.ConnectedText, Mode=OneWay}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkSecondaryBrush}" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding Inspector.ConnectedText}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkSecondaryBrush}" TextWrapping="Wrap" />
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Displacement" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.DisplacementText, Mode=OneWay}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.DisplacementText}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
       </Grid>
     </StackPanel>
 
     <!-- ===== Member ===== -->
-    <StackPanel Visibility="{x:Bind c:Fmt.Vis(Editor.Inspector.IsMember), Mode=OneWay}" Spacing="0">
+    <StackPanel Visibility="{Binding Inspector.IsMember, Converter={StaticResource Vis}}" Spacing="0">
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Endpoints" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.EndpointsText, Mode=OneWay}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.EndpointsText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
       </Grid>
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Length" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.LengthText, Mode=OneWay}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.LengthText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
       </Grid>
 
       <TextBlock Text="SECTION" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" />
-      <ComboBox x:Name="SectionBox" ItemsSource="{x:Bind Editor.Inspector.Sections, Mode=OneWay}" SelectedItem="{x:Bind Editor.Inspector.MemberSection, Mode=TwoWay}"
+      <ComboBox ItemsSource="{Binding Sections}" SelectedIndex="{Binding SectionIndex, Mode=TwoWay}"
                 HorizontalAlignment="Stretch" MinHeight="26" Height="28" FontFamily="{StaticResource UiFont}" FontSize="12" AutomationProperties.Name="Section">
         <ComboBox.ItemTemplate>
-          <DataTemplate x:DataType="m:Section">
-            <TextBlock Text="{x:Bind Name}" FontFamily="{StaticResource UiFont}" FontSize="12" />
+          <DataTemplate>
+            <TextBlock Text="{Binding Name}" FontFamily="{StaticResource UiFont}" FontSize="12" />
           </DataTemplate>
         </ComboBox.ItemTemplate>
       </ComboBox>
-      <TextBlock Text="{x:Bind Editor.Inspector.MaterialText, Mode=OneWay}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,6,0,0" />
-      <TextBlock Text="{x:Bind Editor.Inspector.AreaText, Mode=OneWay}" Style="{StaticResource MonoCaption}" Margin="0,2,0,0" />
+      <TextBlock Text="{Binding Inspector.MaterialText}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,6,0,0" />
+      <TextBlock Text="{Binding Inspector.AreaText}" Style="{StaticResource MonoCaption}" Margin="0,2,0,0" />
       <TextBlock Text="Drag a section from the list below onto any member." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,6,0,0" />
-      <ItemsControl ItemsSource="{x:Bind Editor.Inspector.Sections, Mode=OneWay}" Margin="0,6,0,0">
+      <ItemsControl ItemsSource="{Binding Sections}" Margin="0,6,0,0">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="m:Section">
-            <Border Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1" CornerRadius="4" Padding="6,3" Tag="{x:Bind}"
-                    PointerPressed="OnSectionChipPressed" ToolTipService.ToolTip="{x:Bind Name}">
-              <TextBlock Text="{x:Bind ShortName}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkSecondaryBrush}" />
+          <DataTemplate>
+            <Border Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1" CornerRadius="4" Padding="6,3" Tag="{Binding Id}"
+                    PointerPressed="OnSectionChipPressed" ToolTipService.ToolTip="{Binding Name}">
+              <TextBlock Text="{Binding ShortName}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkSecondaryBrush}" />
             </Border>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
@@ -154,59 +153,60 @@
       <TextBlock Text="RESULT" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" />
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-        <TextBlock Text="{x:Bind Editor.Inspector.ForceKindText, Mode=OneWay}" Style="{StaticResource MediumText}" Foreground="{x:Bind c:Fmt.ForceBrush(Editor.Inspector.IsTension, Editor.Inspector.IsCompression, Editor.Inspector.IsOverstressed), Mode=OneWay}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.ForceText, Mode=OneWay}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding Inspector.ForceKindText}" Style="{StaticResource MediumText}" Foreground="{Binding Inspector.ForceToneKey, Converter={StaticResource Brush}}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.ForceText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
       </Grid>
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Stress" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.StressText, Mode=OneWay}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.StressText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
       </Grid>
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Utilization" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.UtilText, Mode=OneWay}" Style="{StaticResource ValueText}" Foreground="{x:Bind c:Fmt.UtilBrush(Editor.Inspector.Util), Mode=OneWay}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.UtilText}" Style="{StaticResource ValueText}" Foreground="{Binding Inspector.UtilToneKey, Converter={StaticResource Brush}}" VerticalAlignment="Center" />
       </Grid>
-      <c:UtilizationBar Value="{x:Bind Editor.Inspector.Util, Mode=OneWay}" Foreground="{x:Bind c:Fmt.UtilBrush(Editor.Inspector.Util), Mode=OneWay}" />
-      <TextBlock Text="{x:Bind Editor.Inspector.GovernsText, Mode=OneWay}" Style="{StaticResource CaptionText}" Margin="0,6,0,0" />
+      <c:UtilizationBar Value="{Binding Inspector.Util}" Foreground="{Binding Inspector.UtilToneKey, Converter={StaticResource Brush}}" />
+      <TextBlock Text="{Binding Inspector.GovernsText}" Style="{StaticResource CaptionText}" Margin="0,6,0,0" />
       <Grid Style="{StaticResource Row}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
         <TextBlock Text="Buckling" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="1" Text="{x:Bind Editor.Inspector.BucklingText, Mode=OneWay}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding Inspector.BucklingText}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
       </Grid>
       <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,12,0,0">
-        <Button Style="{StaticResource OutlineButton}" Click="OnSplit" Content="Split at midpoint" />
+        <Button Style="{StaticResource OutlineButton}" Command="{Binding SplitMember}" Content="Split at midpoint" />
       </StackPanel>
     </StackPanel>
 
     <!-- ===== Mixed ===== -->
-    <StackPanel Visibility="{x:Bind c:Fmt.Vis(Editor.Inspector.IsMixed), Mode=OneWay}" Spacing="8">
-      <TextBlock Text="{x:Bind Editor.Inspector.MixedText, Mode=OneWay}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" />
-      <StackPanel Spacing="4" Visibility="{x:Bind c:Fmt.Vis(Editor.Inspector.MixedHasNodes), Mode=OneWay}">
+    <StackPanel Visibility="{Binding Inspector.IsMixed, Converter={StaticResource Vis}}" Spacing="8">
+      <TextBlock Text="{Binding Inspector.MixedText}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" />
+      <StackPanel Spacing="4" Visibility="{Binding Inspector.MixedHasNodes, Converter={StaticResource Vis}}">
         <TextBlock Text="NODES" Style="{StaticResource SectionLabel}" Margin="0,8,0,2" />
         <StackPanel Orientation="Horizontal" Spacing="2">
-          <Button Style="{StaticResource OutlineButton}" Content="Pin" Click="OnSupportPin" />
-          <Button Style="{StaticResource OutlineButton}" Content="Roller" Click="OnSupportRoller" />
-          <Button Style="{StaticResource OutlineButton}" Content="No support" Click="OnSupportNone" />
+          <Button Style="{StaticResource OutlineButton}" Content="Pin" Command="{Binding SupportPin}" />
+          <Button Style="{StaticResource OutlineButton}" Content="Roller" Command="{Binding SupportRoller}" />
+          <Button Style="{StaticResource OutlineButton}" Content="No support" Command="{Binding SupportNone}" />
         </StackPanel>
-        <Button Style="{StaticResource OutlineButton}" Content="Clear loads" Click="OnClearLoads" />
+        <Button Style="{StaticResource OutlineButton}" Content="Clear loads" Command="{Binding ClearLoads}" />
       </StackPanel>
-      <StackPanel Spacing="4" Visibility="{x:Bind c:Fmt.Vis(Editor.Inspector.MixedHasMembers), Mode=OneWay}">
+      <StackPanel Spacing="4" Visibility="{Binding Inspector.MixedHasMembers, Converter={StaticResource Vis}}">
         <TextBlock Text="MEMBERS · SET SECTION" Style="{StaticResource SectionLabel}" Margin="0,8,0,2" />
-        <ItemsControl ItemsSource="{x:Bind Editor.Inspector.Sections, Mode=OneWay}">
+        <ItemsControl ItemsSource="{Binding Sections}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate><StackPanel Spacing="2" /></ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="m:Section">
-              <Button Style="{StaticResource QuietButton}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Tag="{x:Bind}" Click="OnBulkSection">
-                <TextBlock Text="{x:Bind Name}" Style="{StaticResource BodyText}" />
+            <DataTemplate>
+              <Button Style="{StaticResource QuietButton}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                      Command="{Binding DataContext.ApplySection, ElementName=Panel}" CommandParameter="{Binding Id}">
+                <TextBlock Text="{Binding Name}" Style="{StaticResource BodyText}" />
               </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </StackPanel>
-      <Button Style="{StaticResource OutlineButton}" Content="Delete selection" Click="OnDelete" Margin="0,8,0,0" />
+      <Button Style="{StaticResource OutlineButton}" Content="Delete selection" Command="{Binding DeleteSelection}" Margin="0,8,0,0" />
     </StackPanel>
   </StackPanel>
 </UserControl>

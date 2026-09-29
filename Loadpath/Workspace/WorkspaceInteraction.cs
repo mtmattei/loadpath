@@ -9,16 +9,16 @@ namespace Loadpath.Workspace;
 /// Owns the active tool, hover state and tool overlay; implements the tool context.
 /// The view (WorkspaceView) forwards pointer and key events here.
 /// </summary>
-public sealed partial class WorkspaceInteraction : ObservableObject, IToolContext
+public sealed class WorkspaceInteraction : IToolContext
 {
-    private readonly EditorViewModel _editor;
+    private readonly EditorEngine _editor;
     private readonly Dictionary<ToolKind, Tool> _tools;
     private Tool _active;
     private Tool? _transientPan;
     private int _gesture;
     private bool _spaceHeld;
 
-    public WorkspaceInteraction(EditorViewModel editor)
+    public WorkspaceInteraction(EditorEngine editor)
     {
         _editor = editor;
         _tools = new Dictionary<ToolKind, Tool>
@@ -36,12 +36,27 @@ public sealed partial class WorkspaceInteraction : ObservableObject, IToolContex
 
     public event EventHandler<CursorKind>? CursorChanged;
     public event EventHandler<ToolKind>? ToolChanged;
+    /// <summary>Raised when a displayed value (tool, hint, cursor text, zoom text) changes.</summary>
+    public event EventHandler? StateChanged;
 
-    [ObservableProperty] private ToolKind _activeTool = ToolKind.Select;
-    [ObservableProperty] private string _hint = "";
-    [ObservableProperty] private ElementRef? _hover;
-    [ObservableProperty] private string _cursorWorldText = "";
-    [ObservableProperty] private string _zoomText = "100%";
+    private ToolKind _activeTool = ToolKind.Select;
+    private string _hint = "";
+    private ElementRef? _hover;
+    private string _cursorWorldText = "";
+    private string _zoomText = "100%";
+
+    public ToolKind ActiveTool { get => _activeTool; private set => Set(ref _activeTool, value); }
+    public string Hint { get => _hint; set => Set(ref _hint, value); }
+    public ElementRef? Hover { get => _hover; private set => Set(ref _hover, value); }
+    public string CursorWorldText { get => _cursorWorldText; private set => Set(ref _cursorWorldText, value); }
+    public string ZoomText { get => _zoomText; private set => Set(ref _zoomText, value); }
+
+    private void Set<T>(ref T field, T value)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return;
+        field = value;
+        StateChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     public ToolOverlay Overlay { get; } = new();
     public bool IsSelectActive => ActiveTool == ToolKind.Select;
@@ -98,12 +113,6 @@ public sealed partial class WorkspaceInteraction : ObservableObject, IToolContex
         Hint = _active.Hint;
         SetCursor(_active.IdleCursor);
         ToolChanged?.Invoke(this, kind);
-        OnPropertyChanged(nameof(IsSelectActive));
-        OnPropertyChanged(nameof(IsNodeActive));
-        OnPropertyChanged(nameof(IsMemberActive));
-        OnPropertyChanged(nameof(IsLoadActive));
-        OnPropertyChanged(nameof(IsSupportActive));
-        OnPropertyChanged(nameof(IsPanActive));
         Invalidate();
     }
 

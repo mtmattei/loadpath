@@ -8,9 +8,9 @@ namespace Loadpath.Workspace;
 /// <summary>Plain data the renderer reads. Built on the UI thread at invalidation; never touches the live document.</summary>
 public sealed class RenderSnapshot
 {
-    public readonly record struct NodeItem(int Id, SKPoint Screen, SKPoint Deflected, SupportKind Support, Vec2 LoadKn, SKPoint LoadTail, Vec2 ReactionKn, bool Selected, bool Hovered, bool Dimmed);
+    public readonly record struct NodeItem(int ElementId, SKPoint Screen, SKPoint Deflected, SupportKind Support, Vec2 LoadKn, SKPoint LoadTail, Vec2 ReactionKn, bool Selected, bool Hovered, bool Dimmed);
 
-    public readonly record struct MemberItem(int Id, SKPoint A, SKPoint B, SKPoint DeflectedA, SKPoint DeflectedB, double ForceKn, double Utilization, bool Overstressed, bool BucklingGoverns, bool Selected, bool Hovered, bool Dimmed);
+    public readonly record struct MemberItem(int ElementId, SKPoint A, SKPoint B, SKPoint DeflectedA, SKPoint DeflectedB, double ForceKn, double Utilization, bool Overstressed, bool BucklingGoverns, bool Selected, bool Hovered, bool Dimmed);
 
     public NodeItem[] Nodes { get; init; } = [];
     public MemberItem[] Members { get; init; } = [];
