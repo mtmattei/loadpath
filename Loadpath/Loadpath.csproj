@@ -1,0 +1,29 @@
+<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-desktop</TargetFrameworks>
+
+    <OutputType>Exe</OutputType>
+    <UnoSingleProject>true</UnoSingleProject>
+
+    <ApplicationTitle>Loadpath</ApplicationTitle>
+    <ApplicationId>com.loadpath.app</ApplicationId>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationPublisher>Loadpath</ApplicationPublisher>
+    <Description>Loadpath: a 2D truss workbench that solves as you draw.</Description>
+
+    <!--
+      SkiaRenderer: the workspace is an SKCanvasElement.
+      Mvvm: CommunityToolkit.Mvvm for observable presentation state.
+      No Material, Toolkit, or Extensions: the visual system is custom and the app has three services.
+    -->
+    <UnoFeatures>
+      SkiaRenderer;
+      Mvvm;
+    </UnoFeatures>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Loadpath.Core/Loadpath.Core.csproj" />
+  </ItemGroup>
+</Project>

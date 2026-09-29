@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Color x:Key="CanvasColor">#0F1216</Color>
+  <Color x:Key="InkColor">#E7EBF0</Color>
+  <SolidColorBrush x:Key="CanvasBrush" Color="{StaticResource CanvasColor}" />
+  <SolidColorBrush x:Key="InkBrush" Color="{StaticResource InkColor}" />
+  <FontFamily x:Key="UiFont">ms-appx:///Assets/Fonts/Inter-Regular.ttf#Inter</FontFamily>
+</ResourceDictionary>
