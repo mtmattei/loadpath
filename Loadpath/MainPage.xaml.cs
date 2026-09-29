@@ -30,13 +30,13 @@ public sealed partial class MainPage : Page
     public MainPage()
     {
         Editor = new EditorViewModel();
-        _settingsModel = _settings.Load();
+        _settingsModel = Environment.GetEnvironmentVariable("LOADPATH_RESET") == "1" ? new SettingsService.Model() : _settings.Load();
         _settings.Apply(_settingsModel, Editor.Options);
         RegisterFileCommands();
         InitializeComponent();
 
         Editor.ToastRequested += (_, msg) => ShowToast(msg);
-        Editor.SelectionChanged += (_, _) => UpdateFloatingBar();
+        Editor.SelectionChanged += (_, _) => { UpdateFloatingBar(); FadeInspector(); };
         Editor.ViewportChanged += (_, _) => UpdateFloatingBar();
         Editor.AnalysisChanged += (_, _) => { UpdateFloatingBar(); ScheduleAutosave(); };
         Editor.Options.PropertyChanged += (_, _) => { ApplyInspectorVisibility(); PersistSettings(); };
@@ -44,11 +44,19 @@ public sealed partial class MainPage : Page
         Workspace.ContextMenuRequested += OnContextMenuRequested;
         Workspace.FocusRequested += (_, _) => KeySink.Focus(FocusState.Programmatic);
         Inspector.SectionDragStarted += OnSectionDragStarted;
-        WorkspaceHost.PointerMoved += OnHostPointerMoved;
-        WorkspaceHost.PointerReleased += OnHostPointerReleased;
-        WorkspaceHost.PointerCaptureLost += OnHostPointerReleased;
+        // handledEventsToo: the canvas marks its pointer events handled, and the drag must still reach the host.
+        Root.AddHandler(PointerMovedEvent, new PointerEventHandler(OnHostPointerMoved), true);
+        Root.AddHandler(PointerReleasedEvent, new PointerEventHandler(OnHostPointerReleased), true);
+        Root.AddHandler(PointerCaptureLostEvent, new PointerEventHandler(OnHostPointerReleased), true);
 
         Root.AddHandler(KeyDownEvent, new KeyEventHandler(OnRootKeyDown), true);
+#if DEBUG
+        if (Environment.GetEnvironmentVariable("LOADPATH_TRACE") is { } tracePath)
+        {
+            Root.AddHandler(PointerWheelChangedEvent, new PointerEventHandler((_, e) => File.AppendAllText(tracePath, $"page wheel {e.GetCurrentPoint(Root).Properties.MouseWheelDelta} src={e.OriginalSource?.GetType().Name}\n")), true);
+            Root.AddHandler(PointerPressedEvent, new PointerEventHandler((_, e) => File.AppendAllText(tracePath, $"page press src={e.OriginalSource?.GetType().Name} pid={e.Pointer.PointerId}\n")), true);
+        }
+#endif
         Root.AddHandler(KeyUpEvent, new KeyEventHandler(OnRootKeyUp), true);
         Loaded += OnLoaded;
         ApplyInspectorVisibility();
@@ -60,6 +68,57 @@ public sealed partial class MainPage : Page
     {
         KeySink.Focus(FocusState.Programmatic);
         RestoreOrSeed();
+        // The window is sized through PreferredLaunchViewSize at launch. The X11 host can still miss a configure
+        // event and lay out at the old size, so the size is re-asserted until the layout agrees with the frame.
+        if (App.MainWindow is { } window && Environment.GetEnvironmentVariable("LOADPATH_NO_RESIZE") != "1")
+        {
+            var attempts = 0;
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            timer.Tick += (_, _) =>
+            {
+                attempts++;
+                try
+                {
+                    var size = window.AppWindow.Size;
+                    var layoutAgrees = Math.Abs(Root.ActualWidth - size.Width) < 4 && Math.Abs(Root.ActualHeight - size.Height) < 4;
+                    if (size.Width >= App.LaunchWidth - 2 && size.Height >= App.LaunchHeight - 2 && layoutAgrees) { timer.Stop(); return; }
+                    if (size.Width >= App.LaunchWidth - 2 && size.Height >= App.LaunchHeight - 2)
+                    {
+                        // Frame is right but the layout is stale: nudge by a pixel so the host re-reads its size.
+                        window.AppWindow.Resize(new Windows.Graphics.SizeInt32 { Width = size.Width + (attempts % 2 == 0 ? 1 : -1), Height = size.Height });
+                    }
+                    else
+                    {
+                        window.AppWindow.Resize(new Windows.Graphics.SizeInt32 { Width = App.LaunchWidth, Height = App.LaunchHeight });
+                    }
+                }
+                catch { timer.Stop(); }
+                if (attempts >= 10) timer.Stop();
+                timer.Interval = TimeSpan.FromMilliseconds(400);
+            };
+            timer.Start();
+        }
+        Root.SizeChanged += (_, args) => ApplyResponsiveLayout(args.NewSize.Width);
+        ApplyResponsiveLayout(ActualWidth);
+    }
+
+    private bool _autoCollapsedInspector;
+
+    /// <summary>Below 1100 px the inspector column gives way to the canvas; it comes back when there is room.</summary>
+    private void ApplyResponsiveLayout(double width)
+    {
+        if (width <= 0) return;
+        if (width < 1100 && Editor.Options.InspectorVisible)
+        {
+            _autoCollapsedInspector = true;
+            Editor.Options.InspectorVisible = false;
+        }
+        else if (width >= 1100 && _autoCollapsedInspector && !Editor.Options.InspectorVisible)
+        {
+            _autoCollapsedInspector = false;
+            Editor.Options.InspectorVisible = true;
+        }
+        Rail.Visibility = width < 640 ? Visibility.Collapsed : Visibility.Visible;
     }
 
     // ---- startup: autosave restore, DEBUG fixture hooks ----
@@ -71,7 +130,7 @@ public sealed partial class MainPage : Page
         {
             Editor.LoadSample(sample);
         }
-        else if (File.Exists(_settings.AutosavePath))
+        else if (Environment.GetEnvironmentVariable("LOADPATH_RESET") != "1" && File.Exists(_settings.AutosavePath))
         {
             try
             {
@@ -142,6 +201,10 @@ public sealed partial class MainPage : Page
         var shift = IsDown(VirtualKey.Shift);
         var alt = IsDown(VirtualKey.Menu);
         var key = e.Key;
+#if DEBUG
+        if (Environment.GetEnvironmentVariable("LOADPATH_TRACE") is { } tracePath)
+            File.AppendAllText(tracePath, $"key {key} ctrl={ctrl} focused={(XamlRoot is { } fr ? FocusManager.GetFocusedElement(fr)?.GetType().Name : "?")} src={e.OriginalSource?.GetType().Name}\n");
+#endif
 
         if (XamlRoot is { } xr && IsTextInputFocused(xr))
         {
@@ -285,6 +348,7 @@ public sealed partial class MainPage : Page
     {
         _draggingSection = section;
         DragGhostText.Text = section.Name;
+        DragGhost.Margin = new Thickness(WorkspaceHost.ActualWidth - 120, 12, 0, 0);
         DragGhost.Visibility = Visibility.Visible;
         Editor.Interaction.Hint = "Drop on a member to apply the section · Esc cancels";
     }
@@ -323,6 +387,26 @@ public sealed partial class MainPage : Page
         Editor.RequestRender();
     }
 
+    // ---- inspector swap: a quick fade so the eye reads a change, not a flash ----
+
+    private InspectorMode _lastInspectorMode = InspectorMode.Summary;
+
+    private void FadeInspector()
+    {
+        var mode = Editor.Inspector.Mode;
+        if (mode == _lastInspectorMode) return;
+        _lastInspectorMode = mode;
+        if (!Loadpath.Workspace.MotionSettings.AnimationsEnabled) return;
+        var sb = new Storyboard();
+        var fade = new DoubleAnimationUsingKeyFrames();
+        fade.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.Zero), Value = 0.45 });
+        fade.KeyFrames.Add(new SplineDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(150)), Value = 1, KeySpline = new KeySpline { ControlPoint1 = new Point(0.22, 1), ControlPoint2 = new Point(0.36, 1) } });
+        Storyboard.SetTarget(fade, Inspector);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+        sb.Children.Add(fade);
+        sb.Begin();
+    }
+
     // ---- toast ----
 
     private void ShowToast(string message)
@@ -330,16 +414,15 @@ public sealed partial class MainPage : Page
         ToastText.Text = message;
         Toast.Opacity = 1;
         ToastTranslate.Y = 0;
-        if (Workspace.Editor is not null && Workspace.Editor.IsEmpty is false) { }
         _toastTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(2400) };
         _toastTimer.Stop();
         _toastTimer.Tick -= OnToastTick;
         _toastTimer.Tick += OnToastTick;
         _toastTimer.Start();
-        if (Workspace.Editor is not null && Loadpath.Workspace.MotionSettings.AnimationsEnabled)
+        if (Loadpath.Workspace.MotionSettings.AnimationsEnabled)
         {
             var sb = new Storyboard();
-            var fade = new DoubleAnimation { From = 0, To = 1, Duration = new Duration(TimeSpan.FromMilliseconds(200)), EasingFunction = null };
+            var fade = new DoubleAnimation { From = 0, To = 1, Duration = new Duration(TimeSpan.FromMilliseconds(200)) };
             Storyboard.SetTarget(fade, Toast);
             Storyboard.SetTargetProperty(fade, "Opacity");
             var rise = new DoubleAnimation { From = 6, To = 0, Duration = new Duration(TimeSpan.FromMilliseconds(200)) };

@@ -20,10 +20,26 @@ public sealed class FileService
         get
         {
             var docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            if (string.IsNullOrEmpty(docs)) docs = AppContext.BaseDirectory;
+            if (string.IsNullOrEmpty(docs) || docs == Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
+                docs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Documents");
             var dir = Path.Combine(docs, "Loadpath");
             Directory.CreateDirectory(dir);
             return dir;
+        }
+    }
+
+    /// <summary>
+    /// On Linux the pickers go through the xdg-desktop-portal over the D-Bus session bus.
+    /// Without a session bus (containers, bare X sessions) the call never completes, so the fallback is used up front.
+    /// </summary>
+    public static bool PickersAvailable
+    {
+        get
+        {
+            if (!OperatingSystem.IsLinux()) return true;
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DBUS_SESSION_BUS_ADDRESS"))) return true;
+            var runtime = Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR");
+            return !string.IsNullOrEmpty(runtime) && File.Exists(Path.Combine(runtime, "bus"));
         }
     }
 
@@ -32,6 +48,7 @@ public sealed class FileService
         string? path = null;
         try
         {
+            if (!PickersAvailable) throw new PlatformNotSupportedException("No file chooser portal.");
             var picker = new FileOpenPicker();
             picker.FileTypeFilter.Add(DocumentSerializer.Extension);
             picker.FileTypeFilter.Add(".json");
@@ -59,6 +76,7 @@ public sealed class FileService
         {
             try
             {
+                if (!PickersAvailable) throw new PlatformNotSupportedException("No file chooser portal.");
                 var picker = new FileSavePicker { SuggestedFileName = Sanitize(doc.Name) };
                 picker.FileTypeChoices.Add("Loadpath structure", new List<string> { DocumentSerializer.Extension });
                 InitializeWithWindow(picker);

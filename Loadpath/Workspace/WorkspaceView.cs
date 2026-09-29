@@ -29,13 +29,26 @@ public sealed partial class WorkspaceView : SKCanvasElement
     private DateTime _animStart;
     private TimeSpan _animDuration;
     private bool _snapshotDirty = true;
+    private bool _fitted;
     private DateTime _lastTap = DateTime.MinValue;
     private Vec2 _lastTapPos;
 
     public WorkspaceView()
     {
         IsTabStop = false;
-        SizeChanged += (_, e) => { _editor?.Viewport.Resize(e.NewSize.Width, e.NewSize.Height); _editor?.Interaction.RefreshZoomText(); MarkDirty(); };
+        SizeChanged += (_, e) =>
+        {
+            _editor?.Viewport.Resize(e.NewSize.Width, e.NewSize.Height);
+            // A fitted view stays fitted through window resizes until the user pans or zooms.
+            if (_editor is not null && _fitted && _editor.Document.Nodes.Count > 0)
+            {
+                _animTimer?.Stop();
+                var target = _editor.Viewport.ComputeFit(_editor.Document.GetBounds());
+                _editor.Viewport.Set(target.Scale, target.Offset);
+            }
+            _editor?.Interaction.RefreshZoomText();
+            MarkDirty();
+        };
         Unloaded += (_, _) => { _animTimer?.Stop(); };
         PointerPressed += OnPointerPressed;
         PointerMoved += OnPointerMoved;
@@ -63,6 +76,7 @@ public sealed partial class WorkspaceView : SKCanvasElement
             old.ViewportChanged -= OnRenderRequested;
             old.FitRequested -= OnFitRequested;
             old.Interaction.CursorChanged -= OnCursorChanged;
+            old.Interaction.UserNavigated -= (_, _) => _fitted = false;
         }
         _editor = editor;
         if (editor is null) return;
@@ -70,6 +84,7 @@ public sealed partial class WorkspaceView : SKCanvasElement
         editor.ViewportChanged += OnRenderRequested;
         editor.FitRequested += OnFitRequested;
         editor.Interaction.CursorChanged += OnCursorChanged;
+        editor.Interaction.UserNavigated += (_, _) => _fitted = false;
         if (ActualWidth > 0) editor.Viewport.Resize(ActualWidth, ActualHeight);
         MarkDirty();
     }
@@ -117,6 +132,7 @@ public sealed partial class WorkspaceView : SKCanvasElement
 
         var connected = new HashSet<int>();
         if (dimOthers && doc.FindMember(sel.MemberIds.First()) is { } sm) { connected.Add(sm.StartNodeId); connected.Add(sm.EndNodeId); }
+        var detached = analysis.DetachedNodeIds.Count > 0 ? new HashSet<int>(analysis.DetachedNodeIds) : null;
 
         var nodes = new RenderSnapshot.NodeItem[doc.Nodes.Count];
         var nodeIndex = new Dictionary<int, int>(doc.Nodes.Count);
@@ -130,7 +146,7 @@ public sealed partial class WorkspaceView : SKCanvasElement
             var deflected = vp.ToScreen(n.Position + disp * exag);
             var tail = HitTester.LoadHandleScreen(n, vp);
             var isSelected = sel.Contains(n.Ref);
-            var dim = dimOthers && !connected.Contains(n.Id);
+            var dim = (dimOthers && !connected.Contains(n.Id)) || (detached?.Contains(n.Id) ?? false);
             nodes[i] = new RenderSnapshot.NodeItem(n.Id, P(s), P(deflected), n.Support, n.Load, P(tail), r?.Reaction ?? Vec2.Zero, isSelected, hover == n.Ref, dim);
         }
 
@@ -142,7 +158,7 @@ public sealed partial class WorkspaceView : SKCanvasElement
             var b = nodes[nodeIndex[m.EndNodeId]];
             var r = analysis.For(m.Id);
             var isSelected = sel.Contains(m.Ref);
-            var dim = dimOthers && !isSelected;
+            var dim = (dimOthers && !isSelected) || (detached?.Contains(m.StartNodeId) ?? false);
             members[i] = new RenderSnapshot.MemberItem(m.Id, a.Screen, b.Screen, a.Deflected, b.Deflected,
                 r?.AxialForceKn ?? 0, r?.Utilization ?? 0, r?.IsOverstressed ?? false, r?.BucklingGoverns ?? false, isSelected, hover == m.Ref, dim);
         }
@@ -199,6 +215,13 @@ public sealed partial class WorkspaceView : SKCanvasElement
         var s = State(e);
         _lastState = s;
         FocusRequested?.Invoke(this, EventArgs.Empty);
+#if DEBUG
+        if (Environment.GetEnvironmentVariable("LOADPATH_TRACE") is { } tr)
+        {
+            var pp = e.GetCurrentPoint(this).Properties;
+            File.AppendAllText(tr, $"press kind={pp.PointerUpdateKind} l={pp.IsLeftButtonPressed} m={pp.IsMiddleButtonPressed} r={pp.IsRightButtonPressed} x1={pp.IsXButton1Pressed} x2={pp.IsXButton2Pressed} wheel={pp.MouseWheelDelta}\n");
+        }
+#endif
         if (s.IsRight)
         {
             _editor.Interaction.CancelTool();
@@ -209,6 +232,7 @@ public sealed partial class WorkspaceView : SKCanvasElement
             return;
         }
         CapturePointer(e.Pointer);
+        if (s.IsMiddle || _editor.Interaction.ActiveTool == ToolKind.Pan) _fitted = false;
         var now = DateTime.UtcNow;
         if ((now - _lastTap).TotalMilliseconds < 350 && (s.Screen - _lastTapPos).Length < 6)
         {
@@ -252,9 +276,13 @@ public sealed partial class WorkspaceView : SKCanvasElement
         if (_editor is null) return;
         var pt = e.GetCurrentPoint(this);
         var delta = pt.Properties.MouseWheelDelta;
+#if DEBUG
+        if (Environment.GetEnvironmentVariable("LOADPATH_TRACE") is { } trace) File.AppendAllText(trace, $"wheel {delta} h={pt.Properties.IsHorizontalMouseWheel}\n");
+#endif
         if (delta == 0) return;
         var mods = e.KeyModifiers;
         var screen = new Vec2(pt.Position.X, pt.Position.Y);
+        _fitted = false;
         if (mods.HasFlag(Windows.System.VirtualKeyModifiers.Shift) || pt.Properties.IsHorizontalMouseWheel)
         {
             _editor.Viewport.PanBy(new Vec2(delta > 0 ? 60 : -60, 0));
@@ -289,6 +317,7 @@ public sealed partial class WorkspaceView : SKCanvasElement
     private void OnFitRequested(object? sender, EventArgs e)
     {
         if (_editor is null) return;
+        _fitted = true;
         var bounds = _editor.Document.GetBounds();
         var target = _editor.Viewport.ComputeFit(bounds);
         AnimateViewport(target.Scale, target.Offset, TimeSpan.FromMilliseconds(280));

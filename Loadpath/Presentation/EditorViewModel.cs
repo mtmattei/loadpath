@@ -74,6 +74,8 @@ public sealed partial class EditorViewModel : ObservableObject
     [ObservableProperty] private bool _isEmpty = true;
     [ObservableProperty] private bool _isMechanism;
     [ObservableProperty] private string _mechanismText = "";
+    [ObservableProperty] private bool _hasDetached;
+    [ObservableProperty] private string _detachedText = "";
     [ObservableProperty] private bool _isPaletteOpen;
 
     private int _savedVersion;
@@ -155,6 +157,9 @@ public sealed partial class EditorViewModel : ObservableObject
                 break;
         }
         MaxUtilizationText = Analysis.IsSolved ? $"{Analysis.MaxUtilization * 100:0}%" : "—";
+        HasDetached = Analysis.HasDetached && !IsMechanism;
+        var d = Analysis.DetachedNodeIds.Count;
+        DetachedText = d == 1 ? "1 node is not connected to a support and carries nothing." : $"{d} nodes are not connected to a support and carry nothing.";
     }
 
     // ---- document lifecycle ----

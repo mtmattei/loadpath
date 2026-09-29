@@ -26,7 +26,7 @@
 
       <!-- Workspace host: canvas below, XAML overlay above. -->
       <Grid Grid.Column="1" x:Name="WorkspaceHost">
-        <w:WorkspaceView x:Name="Workspace" Editor="{x:Bind Editor}" />
+        <w:WorkspaceView x:Name="Workspace" Editor="{x:Bind Editor}" AutomationProperties.Name="Structure workspace" />
         <c:KeySink x:Name="KeySink" />
 
         <!-- Mechanism / unsupported banner -->
@@ -36,6 +36,16 @@
           <StackPanel Orientation="Horizontal" Spacing="8">
             <c:Icon Kind="warning" Foreground="{StaticResource DangerBrush}" Width="14" Height="14" />
             <TextBlock Text="{x:Bind Editor.MechanismText, Mode=OneWay}" Style="{StaticResource BodyText}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- Detached parts notice (warning, not failure) -->
+        <Border VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,12,0,0" Padding="12,6" CornerRadius="4"
+                Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource HairlineStrongBrush}" BorderThickness="1"
+                Visibility="{x:Bind c:Fmt.Vis(Editor.HasDetached), Mode=OneWay}" IsHitTestVisible="False">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <c:Icon Kind="warning" Foreground="{StaticResource InkSecondaryBrush}" Width="14" Height="14" />
+            <TextBlock Text="{x:Bind Editor.DetachedText, Mode=OneWay}" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
           </StackPanel>
         </Border>
 

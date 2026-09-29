@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Windows.System;
+using Microsoft.UI.Xaml.Media.Animation;
 
 namespace Loadpath.Views;
 
@@ -39,6 +40,22 @@ public sealed partial class CommandPalette : UserControl
         Query.Text = "";
         Rebuild("");
         DispatcherQueue.TryEnqueue(() => Query.Focus(FocusState.Programmatic));
+        if (!Loadpath.Workspace.MotionSettings.AnimationsEnabled) return;
+        var sb = new Microsoft.UI.Xaml.Media.Animation.Storyboard();
+        var spline = new Microsoft.UI.Xaml.Media.Animation.KeySpline { ControlPoint1 = new Windows.Foundation.Point(0.17, 1), ControlPoint2 = new Windows.Foundation.Point(0.32, 1) };
+        var fade = new Microsoft.UI.Xaml.Media.Animation.DoubleAnimationUsingKeyFrames();
+        fade.KeyFrames.Add(new Microsoft.UI.Xaml.Media.Animation.DiscreteDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.Zero), Value = 0 });
+        fade.KeyFrames.Add(new Microsoft.UI.Xaml.Media.Animation.SplineDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(200)), Value = 1, KeySpline = spline });
+        Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(fade, Panel);
+        Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fade, "Opacity");
+        var rise = new Microsoft.UI.Xaml.Media.Animation.DoubleAnimationUsingKeyFrames();
+        rise.KeyFrames.Add(new Microsoft.UI.Xaml.Media.Animation.DiscreteDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.Zero), Value = 6 });
+        rise.KeyFrames.Add(new Microsoft.UI.Xaml.Media.Animation.SplineDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(200)), Value = 0, KeySpline = spline });
+        Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(rise, PanelTranslate);
+        Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(rise, "Y");
+        sb.Children.Add(fade);
+        sb.Children.Add(rise);
+        sb.Begin();
     }
 
     private void Close()

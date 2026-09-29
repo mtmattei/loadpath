@@ -21,20 +21,28 @@ public static class TrussSolver
         var nodeResults = new Dictionary<int, NodeResult>(nodes.Count);
 
         // Geometry-only results are still useful (lengths) even when we cannot solve.
+        // Parts that touch no support cannot carry load: leave them out of the solve instead of failing everything.
+        var detached = FindDetachedNodes(doc);
+        var active = nodes.Where(n => !detached.Contains(n.Id)).ToList();
+        var activeMembers = members.Where(m => !detached.Contains(m.StartNodeId) && !detached.Contains(m.EndNodeId)).ToList();
+        var detachedList = detached.OrderBy(i => i).ToList();
+
         AnalysisResult Fail(AnalysisStatus status)
         {
             foreach (var m in members)
                 memberResults[m.Id] = new MemberResult(m.Id, 0, 0, doc.MemberLength(m), 0, 0);
             foreach (var n in nodes)
                 nodeResults[n.Id] = new NodeResult(n.Id, Vec2.Zero, Vec2.Zero);
-            return new AnalysisResult(status, memberResults, nodeResults, 0, 0, 0, null, sw.Elapsed.TotalMilliseconds);
+            return new AnalysisResult(status, memberResults, nodeResults, 0, 0, 0, null, sw.Elapsed.TotalMilliseconds, detachedList);
         }
 
-        if (!nodes.Any(n => n.HasLoad)) return Fail(AnalysisStatus.NoLoads);
+        if (!active.Any(n => n.HasLoad)) return Fail(AnalysisStatus.NoLoads);
 
-        var fixedDofs = nodes.Sum(n => (n.Support.FixesX() ? 1 : 0) + (n.Support.FixesY() ? 1 : 0));
+        var fixedDofs = active.Sum(n => (n.Support.FixesX() ? 1 : 0) + (n.Support.FixesY() ? 1 : 0));
         if (fixedDofs < 3) return Fail(AnalysisStatus.Unsupported);
 
+        nodes = active;
+        members = activeMembers;
         var index = new Dictionary<int, int>(nodes.Count);
         for (var i = 0; i < nodes.Count; i++) index[nodes[i].Id] = i;
         var dofCount = nodes.Count * 2;
@@ -159,6 +167,47 @@ public static class TrussSolver
             nodeResults[n.Id] = new NodeResult(n.Id, disp, new Vec2(rx / 1000, ry / 1000));
         }
 
-        return new AnalysisResult(AnalysisStatus.Solved, memberResults, nodeResults, maxForce, maxUtil, maxDisp, critical, sw.Elapsed.TotalMilliseconds);
+        // Detached parts get geometry-only results.
+        foreach (var m in doc.Members)
+            if (!memberResults.ContainsKey(m.Id)) memberResults[m.Id] = new MemberResult(m.Id, 0, 0, doc.MemberLength(m), 0, 0);
+        foreach (var n in doc.Nodes)
+            if (!nodeResults.ContainsKey(n.Id)) nodeResults[n.Id] = new NodeResult(n.Id, Vec2.Zero, Vec2.Zero);
+
+        return new AnalysisResult(AnalysisStatus.Solved, memberResults, nodeResults, maxForce, maxUtil, maxDisp, critical, sw.Elapsed.TotalMilliseconds, detachedList);
+    }
+
+    /// <summary>Nodes whose connected component (through members) contains no support.</summary>
+    public static HashSet<int> FindDetachedNodes(StructureDocument doc)
+    {
+        var adjacency = new Dictionary<int, List<int>>();
+        foreach (var n in doc.Nodes) adjacency[n.Id] = new List<int>();
+        foreach (var m in doc.Members)
+        {
+            adjacency[m.StartNodeId].Add(m.EndNodeId);
+            adjacency[m.EndNodeId].Add(m.StartNodeId);
+        }
+        var detached = new HashSet<int>();
+        var visited = new HashSet<int>();
+        var stack = new Stack<int>();
+        foreach (var start in doc.Nodes)
+        {
+            if (visited.Contains(start.Id)) continue;
+            var component = new List<int>();
+            var supported = false;
+            stack.Push(start.Id);
+            visited.Add(start.Id);
+            while (stack.Count > 0)
+            {
+                var id = stack.Pop();
+                component.Add(id);
+                if (doc.GetNode(id).HasSupport) supported = true;
+                foreach (var next in adjacency[id])
+                {
+                    if (visited.Add(next)) stack.Push(next);
+                }
+            }
+            if (!supported) detached.UnionWith(component);
+        }
+        return detached;
     }
 }

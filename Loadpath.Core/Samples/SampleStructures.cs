@@ -96,27 +96,31 @@ public static class SampleStructures
         const double span = 9.0;
         const double rise = 2.4;
         const int panels = 6;
+        // Bottom chord: 7 nodes. The eaves nodes are shared with the top chord.
         var bottom = new int[panels + 1];
-        var top = new int[panels + 1];
         for (var i = 0; i <= panels; i++)
         {
             var x = i * span / panels;
             var support = i == 0 ? SupportKind.Pin : i == panels ? SupportKind.RollerY : SupportKind.None;
-            bottom[i] = b.Node(x, 0, support);
+            var fy = i == 0 || i == panels ? -3 : 0;
+            bottom[i] = b.Node(x, 0, support, 0, fy);
         }
-        for (var i = 0; i <= panels; i++)
+        // Top chord: 5 interior nodes under the purlins.
+        var top = new int[panels + 1];
+        top[0] = bottom[0];
+        top[panels] = bottom[panels];
+        for (var i = 1; i < panels; i++)
         {
             var x = i * span / panels;
             var y = rise * (1 - Math.Abs(x - span / 2) / (span / 2));
-            var fy = i == 0 || i == panels ? -3 : -6;
-            top[i] = b.Node(x, y, SupportKind.None, 0, fy);
+            top[i] = b.Node(x, y, SupportKind.None, 0, -6);
         }
         for (var i = 0; i < panels; i++) b.Member(bottom[i], bottom[i + 1], Section.Timber45x95);
         for (var i = 0; i < panels; i++) b.Member(top[i], top[i + 1], Section.Timber45x95);
         for (var i = 1; i < panels; i++) b.Member(bottom[i], top[i], Section.Timber45x95);
         // Howe diagonals slope toward the center.
-        for (var i = 0; i < panels / 2; i++) b.Member(bottom[i], top[i + 1], Section.Timber45x95);
-        for (var i = panels / 2; i < panels; i++) b.Member(top[i], bottom[i + 1], Section.Timber45x95);
+        for (var i = 1; i < panels / 2; i++) b.Member(bottom[i], top[i + 1], Section.Timber45x95);
+        for (var i = panels / 2; i < panels - 1; i++) b.Member(top[i], bottom[i + 1], Section.Timber45x95);
         return b.Done("Howe roof truss");
     }
 }

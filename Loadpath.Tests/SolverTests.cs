@@ -101,4 +101,33 @@ public class SolverTests
         Assert.True(r.Members[1].UtilizationBuckling > 0);
         Assert.Equal(0, r.Members[3].UtilizationBuckling);
     }
+
+    [Fact]
+    public void Detached_part_is_left_out_but_the_rest_still_solves()
+    {
+        var doc = Triangle();
+        var h = new EditHistory(doc);
+        h.Do(new AddNodeEdit(new Vec2(10, 0)));
+        h.Do(new AddNodeEdit(new Vec2(12, 0)));
+        h.Do(new AddMemberEdit(4, 5, Section.Chs48));
+        var r = TrussSolver.Solve(doc);
+        Assert.Equal(AnalysisStatus.Solved, r.Status);
+        Assert.Equal(new[] { 4, 5 }, r.DetachedNodeIds);
+        Assert.InRange(r.Members[1].AxialForceKn, -6.02, -6.00);
+        Assert.Equal(0, r.Members[4].AxialForceKn);
+    }
+
+    [Theory]
+    [InlineData("warren")]
+    [InlineData("cantilever")]
+    [InlineData("roof")]
+    public void Every_sample_solves_below_full_utilization(string id)
+    {
+        var doc = new StructureDocument();
+        SampleStructures.Build(id).Restore(doc);
+        var r = TrussSolver.Solve(doc);
+        Assert.Equal(AnalysisStatus.Solved, r.Status);
+        Assert.Empty(r.DetachedNodeIds);
+        Assert.InRange(r.MaxUtilization, 0.05, 0.99);
+    }
 }

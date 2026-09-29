@@ -10,9 +10,13 @@ public partial class App : Application
     }
 
     public static Window? MainWindow { get; private set; }
+    public const int LaunchWidth = 1400;
+    public const int LaunchHeight = 860;
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        // Size the window at creation; resizing after the fact races the Skia host's surface.
+        Windows.UI.ViewManagement.ApplicationView.PreferredLaunchViewSize = new Windows.Foundation.Size(LaunchWidth, LaunchHeight);
         MainWindow = new Window();
 #if DEBUG
         // Headless verification runs opt out: UseStudio() keeps the window hidden when no DevServer is reachable.
@@ -23,7 +27,6 @@ public partial class App : Application
 #endif
         MainWindow.SetWindowIcon();
         MainWindow.Title = "Loadpath";
-        try { MainWindow.AppWindow.Resize(new Windows.Graphics.SizeInt32 { Width = 1400, Height = 860 }); } catch { /* host may refuse */ }
 
         if (MainWindow.Content is not Frame rootFrame)
         {

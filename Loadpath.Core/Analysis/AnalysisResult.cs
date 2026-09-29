@@ -37,7 +37,7 @@ public readonly record struct NodeResult(int NodeId, Vec2 Displacement, Vec2 Rea
 
 public sealed class AnalysisResult
 {
-    public static readonly AnalysisResult EmptyResult = new(AnalysisStatus.Empty, new Dictionary<int, MemberResult>(), new Dictionary<int, NodeResult>(), 0, 0, 0, null, 0);
+    public static readonly AnalysisResult EmptyResult = new(AnalysisStatus.Empty, new Dictionary<int, MemberResult>(), new Dictionary<int, NodeResult>(), 0, 0, 0, null, 0, Array.Empty<int>());
 
     public AnalysisResult(
         AnalysisStatus status,
@@ -47,8 +47,10 @@ public sealed class AnalysisResult
         double maxUtilization,
         double maxDisplacementM,
         int? criticalMemberId,
-        double solveMilliseconds)
+        double solveMilliseconds,
+        IReadOnlyList<int> detachedNodeIds)
     {
+        DetachedNodeIds = detachedNodeIds;
         Status = status;
         Members = members;
         Nodes = nodes;
@@ -68,6 +70,9 @@ public sealed class AnalysisResult
     public double MaxDisplacementM { get; }
     public int? CriticalMemberId { get; }
     public double SolveMilliseconds { get; }
+    /// <summary>Nodes in parts that touch no support. They are left out of the solve and drawn neutral.</summary>
+    public IReadOnlyList<int> DetachedNodeIds { get; }
+    public bool HasDetached => DetachedNodeIds.Count > 0;
 
     public MemberResult? For(int memberId) => Members.TryGetValue(memberId, out var r) ? r : null;
     public NodeResult? ForNode(int nodeId) => Nodes.TryGetValue(nodeId, out var r) ? r : null;

@@ -188,8 +188,11 @@ public sealed partial class WorkspaceInteraction : ObservableObject, IToolContex
 
     // ---- zoom ----
 
+    public event EventHandler? UserNavigated;
+
     public void ZoomStep(int direction, Vec2? anchor = null)
     {
+        UserNavigated?.Invoke(this, EventArgs.Empty);
         var factor = Math.Pow(1.1, direction);
         var a = anchor ?? new Vec2(Viewport.ScreenWidth / 2, Viewport.ScreenHeight / 2);
         Viewport.ZoomAt(a, Viewport.Scale * factor);
@@ -198,6 +201,7 @@ public sealed partial class WorkspaceInteraction : ObservableObject, IToolContex
 
     public void ZoomTo(double scale)
     {
+        UserNavigated?.Invoke(this, EventArgs.Empty);
         var a = new Vec2(Viewport.ScreenWidth / 2, Viewport.ScreenHeight / 2);
         Viewport.ZoomAt(a, scale);
         ZoomText = $"{Viewport.ZoomPercent:0}%";
