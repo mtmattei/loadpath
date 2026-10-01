@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Loadpath.Controls">
   <Grid x:Name="Scrim" Background="#66000000" PointerPressed="OnScrimPressed">
+    <!-- xaml-lint: allow card - command palette popover chrome; no Toolkit by README decision -->
     <Border x:Name="Panel" Width="520" MaxHeight="420" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,96,0,0"
             Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource HairlineStrongBrush}" BorderThickness="1" CornerRadius="6"
             PointerPressed="OnPanelPressed">
@@ -25,6 +26,7 @@
           <ItemsControl ItemsSource="{Binding PaletteItems}" Padding="4">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
+                <!-- xaml-lint: allow card - command palette popover chrome; no Toolkit by README decision -->
                 <Border Height="26" Padding="8,0" CornerRadius="4" Background="{Binding RowBrushKey, Converter={StaticResource Brush}}" Tag="{Binding Id}" PointerPressed="OnItemPressed" PointerEntered="OnItemEntered">
                   <Grid ColumnSpacing="10">
                     <Grid.ColumnDefinitions>

@@ -1,4 +1,3 @@
-using Loadpath.Core.Geometry;
 using Loadpath.Presentation;
 
 namespace Loadpath.Workspace.Tools;

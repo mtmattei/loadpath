@@ -1,5 +1,4 @@
 using System.Globalization;
-using Microsoft.UI.Xaml.Media;
 using Windows.Foundation;
 
 namespace Loadpath.Controls;

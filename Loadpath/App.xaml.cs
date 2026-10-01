@@ -1,5 +1,3 @@
-using Uno.Resizetizer;
-
 namespace Loadpath;
 
 public partial class App : Application

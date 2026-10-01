@@ -9,6 +9,7 @@
       <c:TextToVisibilityConverter x:Key="VisText" />
       <c:KeyToBrushConverter x:Key="Brush" />
       <c:BoolToBrushConverter x:Key="Pick" />
+      <c:UpperCaseConverter x:Key="Upper" />
       <c:BoolToDimConverter x:Key="Dim" />
       <c:NullableBoolConverter x:Key="Checked" />
       <ResourceDictionary.MergedDictionaries>

@@ -2,77 +2,193 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Loadpath.Controls"
-             Height="56">
-  <!-- xaml-lint: allow card - status pill and keycap, not cards; the project uses no Toolkit (README decision) -->
-  <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,0,1" Padding="16,0,12,0">
-    <Grid ColumnSpacing="12">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="Auto" />
-        <ColumnDefinition Width="*" />
-      </Grid.ColumnDefinitions>
+             Height="{StaticResource TitleStripHeight}">
+  <Grid Background="{StaticResource CanvasBrush}" Padding="16,0,16,0">
+    <!-- The right cluster yields as the window narrows: the over-capacity pill, then the noise control's label, then search. -->
+    <VisualStateManager.VisualStateGroups>
+      <VisualStateGroup x:Name="WidthStates">
+        <VisualState x:Name="Wide">
+          <VisualState.StateTriggers><AdaptiveTrigger MinWindowWidth="1240" /></VisualState.StateTriggers>
+        </VisualState>
+        <VisualState x:Name="Medium">
+          <VisualState.StateTriggers><AdaptiveTrigger MinWindowWidth="1000" /></VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="StatusPill.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState x:Name="Narrow">
+          <VisualState.StateTriggers><AdaptiveTrigger MinWindowWidth="720" /></VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="StatusPill.Visibility" Value="Collapsed" />
+            <Setter Target="NoiseLabel.Visibility" Value="Collapsed" />
+            <Setter Target="DocumentName.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState x:Name="Compact">
+          <VisualState.StateTriggers><AdaptiveTrigger MinWindowWidth="0" /></VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="StatusPill.Visibility" Value="Collapsed" />
+            <Setter Target="NoiseLabel.Visibility" Value="Collapsed" />
+            <Setter Target="DocumentName.Visibility" Value="Collapsed" />
+            <Setter Target="SearchButton.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
 
-      <!-- Left: wordmark, document, history -->
-      <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-        <TextBlock Text="Loadpath" Style="{StaticResource TitleText}" FontSize="16" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding Status.DocumentName}" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" Margin="-6,0,0,0"
-                    Visibility="{Binding Status.IsDirty, Converter={StaticResource Vis}}">
-          <Ellipse Width="5" Height="5" Fill="{StaticResource InkSecondaryBrush}" VerticalAlignment="Center" />
-          <TextBlock Text="Unsaved" Style="{StaticResource MonoCaption}" FontSize="11" VerticalAlignment="Center" />
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="12,0,0,0">
-          <Button Style="{StaticResource IconButton}" Command="{Binding Undo}" ToolTipService.ToolTip="{Binding Status.UndoTooltip}" AutomationProperties.Name="Undo">
-            <c:Icon Kind="undo" Foreground="{StaticResource InkBrush}" />
-          </Button>
-          <Button Style="{StaticResource IconButton}" Command="{Binding Redo}" ToolTipService.ToolTip="{Binding Status.RedoTooltip}" AutomationProperties.Name="Redo">
-            <c:Icon Kind="redo" Foreground="{StaticResource InkBrush}" />
-          </Button>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto" />
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="Auto" />
+    </Grid.ColumnDefinitions>
+
+    <!-- Perforation along the top edge of the sheet -->
+    <Rectangle Grid.ColumnSpan="3" Style="{StaticResource DashedRule}" VerticalAlignment="Top" Margin="-16,2,-16,0" />
+
+    <!-- Left: wordmark, document, history, display mode -->
+    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+      <TextBlock Text="LOADPATH" FontFamily="{StaticResource MonoFontMedium}" FontSize="14" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" />
+      <TextBlock Text="/" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkTertiaryBrush}" VerticalAlignment="Center" />
+      <StackPanel x:Name="DocumentName" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <TextBlock Text="{Binding Status.DocumentName, Converter={StaticResource Upper}}" FontFamily="{StaticResource MonoFontMedium}" FontSize="12" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
+        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" c:Motion.Reveal="True" Visibility="{Binding Status.IsDirty, Converter={StaticResource Vis}}">
+          <Ellipse Width="5" Height="5" Fill="{StaticResource InkBrush}" VerticalAlignment="Center" />
+          <TextBlock Text="UNSAVED" Style="{StaticResource MonoCaption}" FontSize="11" VerticalAlignment="Center" />
         </StackPanel>
       </StackPanel>
-
-      <!-- Center: display mode -->
-      <Border Grid.Column="1" Style="{StaticResource SegmentGroup}" VerticalAlignment="Center">
+      <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Margin="16,0,8,0">
+        <Button Style="{StaticResource IconButton}" Command="{Binding Undo}" ToolTipService.ToolTip="{Binding Status.UndoTooltip}" AutomationProperties.Name="Undo">
+          <c:Icon Kind="undo" Foreground="{StaticResource InkBrush}" />
+        </Button>
+        <Button Style="{StaticResource IconButton}" Command="{Binding Redo}" ToolTipService.ToolTip="{Binding Status.RedoTooltip}" AutomationProperties.Name="Redo">
+          <c:Icon Kind="redo" Foreground="{StaticResource InkBrush}" />
+        </Button>
+      </StackPanel>
+      <!-- xaml-lint: allow card - segmented control frame; no Toolkit by README decision -->
+      <Border Style="{StaticResource SegmentGroup}" VerticalAlignment="Center">
         <StackPanel Orientation="Horizontal">
-          <ToggleButton Style="{StaticResource SegmentToggle}" Content="Forces" IsChecked="{Binding IsForces}" Command="{Binding ShowForces}"
+          <ToggleButton Style="{StaticResource SegmentToggle}" Content="FORCES" IsChecked="{Binding IsForces}" Command="{Binding ShowForces}"
                         ToolTipService.ToolTip="Show axial forces   1" AutomationProperties.Name="Show forces" />
-          <Rectangle Width="1" Fill="{StaticResource InkSecondaryBrush}" />
-          <ToggleButton Style="{StaticResource SegmentToggle}" Content="Utilization" IsChecked="{Binding IsUtilization}" Command="{Binding ShowUtilization}"
+          <Rectangle Width="1" Fill="{StaticResource HairlineStrongBrush}" />
+          <ToggleButton Style="{StaticResource SegmentToggle}" Content="UTILIZATION" IsChecked="{Binding IsUtilization}" Command="{Binding ShowUtilization}"
                         ToolTipService.ToolTip="Show utilization   2" AutomationProperties.Name="Show utilization" />
         </StackPanel>
       </Border>
+    </StackPanel>
 
-      <!-- Right: status pill, commands, files -->
-      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" VerticalAlignment="Center">
-        <Border Height="30" CornerRadius="15" Padding="12,0" BorderThickness="1" VerticalAlignment="Center"
-                Background="{Binding Status.PillIsDanger, Converter={StaticResource Pick}, ConverterParameter=DangerSoftBrush|SurfaceRaisedBrush}"
-                BorderBrush="{Binding Status.PillIsDanger, Converter={StaticResource Pick}, ConverterParameter=DangerBorderBrush|HairlineBrush}">
-          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-            <c:Icon Kind="warning" Width="14" Height="14" Foreground="{StaticResource DangerBrush}"
-                    Visibility="{Binding Status.PillIsDanger, Converter={StaticResource Vis}}" />
-            <Ellipse Width="6" Height="6" Fill="{Binding Status.StatusToneKey, Converter={StaticResource Brush}}" VerticalAlignment="Center"
-                     Visibility="{Binding Status.PillIsDanger, Converter={StaticResource Vis}, ConverterParameter=invert}" />
-            <TextBlock Text="{Binding Status.PillText}" Style="{StaticResource MediumText}" VerticalAlignment="Center"
-                       Foreground="{Binding Status.PillIsDanger, Converter={StaticResource Pick}, ConverterParameter=DangerBrush|InkSecondaryBrush}" />
-          </StackPanel>
-        </Border>
+    <!-- Right: status, reduce noise, search, files -->
+    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" HorizontalAlignment="Right" VerticalAlignment="Center">
+      <!-- xaml-lint: allow card - status pill; no Toolkit by README decision -->
+      <Border x:Name="StatusPill" Height="32" CornerRadius="16" Padding="14,0" VerticalAlignment="Center"
+              Background="{Binding Status.PillIsDanger, Converter={StaticResource Pick}, ConverterParameter=DangerSoftBrush|SurfaceRaisedBrush}">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <c:Icon Kind="warning" Width="14" Height="14" Foreground="{StaticResource DangerBrush}"
+                  Visibility="{Binding Status.PillIsDanger, Converter={StaticResource Vis}}" />
+          <Ellipse Width="6" Height="6" Fill="{Binding Status.StatusToneKey, Converter={StaticResource Brush}}" VerticalAlignment="Center"
+                   Visibility="{Binding Status.PillIsDanger, Converter={StaticResource Vis}, ConverterParameter=invert}" />
+          <TextBlock Text="{Binding Status.PillText}" FontFamily="{StaticResource MonoFontMedium}" FontSize="12" VerticalAlignment="Center"
+                     Foreground="{Binding Status.PillIsDanger, Converter={StaticResource Pick}, ConverterParameter=DangerBrush|InkSecondaryBrush}" />
+        </StackPanel>
+      </Border>
 
-        <Button Style="{StaticResource OutlineButton}" Height="38" Padding="10,0,4,0" Command="{Binding TogglePalette}"
-                ToolTipService.ToolTip="Command palette   Ctrl+K" AutomationProperties.Name="Command palette">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <c:Icon Kind="search" Width="14" Height="14" Foreground="{StaticResource InkSecondaryBrush}" />
-            <TextBlock Text="Commands" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" Margin="0,0,14,0" />
-            <Border Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1" CornerRadius="3" Padding="6,1">
-              <StackPanel>
-                <TextBlock Text="Ctrl" Style="{StaticResource MonoCaption}" FontSize="10" LineHeight="12" HorizontalAlignment="Center" />
-                <TextBlock Text="K" Style="{StaticResource MonoCaption}" FontSize="10" LineHeight="12" HorizontalAlignment="Center" />
-              </StackPanel>
-            </Border>
-          </StackPanel>
-        </Button>
-        <Button Style="{StaticResource LinkButton}" Content="Open" Command="{Binding OpenFile}" ToolTipService.ToolTip="Open   Ctrl+O" AutomationProperties.Name="Open" />
-        <Button Style="{StaticResource PrimaryButton}" Content="Save" Command="{Binding SaveFile}" ToolTipService.ToolTip="Save   Ctrl+S" AutomationProperties.Name="Save" />
-      </StackPanel>
-    </Grid>
-  </Border>
+      <!-- Reduce noise: the switch (F) and, split off, the layer chooser -->
+      <!-- xaml-lint: allow card - split-button frame; no Toolkit by README decision -->
+      <Border BorderThickness="1" CornerRadius="2" VerticalAlignment="Center"
+              Background="{Binding ReduceNoise, Converter={StaticResource Pick}, ConverterParameter=AccentSoftBrush|SurfaceBrush}"
+              BorderBrush="{Binding ReduceNoise, Converter={StaticResource Pick}, ConverterParameter=AccentBrush|HairlineStrongBrush}">
+        <StackPanel Orientation="Horizontal">
+          <ToggleButton Style="{StaticResource SwitchToggle}" IsChecked="{Binding ReduceNoise, Mode=TwoWay, Converter={StaticResource Checked}}"
+                        ToolTipService.ToolTip="Reduce noise   F" AutomationProperties.Name="Reduce noise">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock x:Name="NoiseLabel" Text="REDUCE NOISE" VerticalAlignment="Center" />
+              <Border Style="{StaticResource Keycap}">
+                <TextBlock Text="F" Style="{StaticResource KeycapText}" />
+              </Border>
+            </StackPanel>
+          </ToggleButton>
+          <Rectangle Width="1" Fill="{Binding ReduceNoise, Converter={StaticResource Pick}, ConverterParameter=AccentBrush|HairlineStrongBrush}" />
+          <Button Style="{StaticResource IconButton}" Width="36" Height="38" ToolTipService.ToolTip="Choose what stays" AutomationProperties.Name="Choose what stays when noise is reduced">
+            <c:Icon Kind="chevron-down" Width="14" Height="14" Foreground="{StaticResource InkBrush}" />
+            <Button.Flyout>
+              <Flyout x:Name="NoiseFlyout" Placement="BottomEdgeAlignedRight" FlyoutPresenterStyle="{StaticResource SheetFlyoutPresenter}">
+                <StackPanel Width="318">
+                  <StackPanel Padding="16,14,16,4" Spacing="6">
+                    <Grid>
+                      <TextBlock Text="REDUCE NOISE" FontFamily="{StaticResource MonoFontMedium}" FontSize="12" Foreground="{StaticResource AccentBrush}" />
+                      <TextBlock Text="{Binding NoiseSummary}" Style="{StaticResource MonoCaption}" FontSize="11" Foreground="{StaticResource InkBrush}" HorizontalAlignment="Right" />
+                    </Grid>
+                    <TextBlock Text="Pick what stays on screen when noise is reduced. The structure, your selection and the inspector inputs always stay."
+                               Style="{StaticResource CaptionText}" TextWrapping="Wrap" TextTrimming="None" />
+                  </StackPanel>
+
+                  <StackPanel Padding="16,8,16,10">
+                    <TextBlock Text="DRAWING" Style="{StaticResource MonoCaption}" FontSize="11" Margin="0,6,0,2" />
+                    <Grid>
+                      <CheckBox Style="{StaticResource LayerCheckBox}" Content="Grid" IsChecked="{Binding KeepGrid, Mode=TwoWay, Converter={StaticResource Checked}}" />
+                      <TextBlock Text="{Binding Counts.Grid}" Style="{StaticResource MonoCaption}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                    <CheckBox Style="{StaticResource LayerCheckBox}" Content="Dimensions" IsChecked="{Binding KeepDimensions, Mode=TwoWay, Converter={StaticResource Checked}}" />
+                    <Grid>
+                      <CheckBox Style="{StaticResource LayerCheckBox}" Content="Supports" IsChecked="{Binding KeepSupports, Mode=TwoWay, Converter={StaticResource Checked}}" />
+                      <TextBlock Text="{Binding Counts.Supports}" Style="{StaticResource MonoCaption}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                    <Grid>
+                      <CheckBox Style="{StaticResource LayerCheckBox}" Content="Loads" IsChecked="{Binding KeepLoads, Mode=TwoWay, Converter={StaticResource Checked}}" />
+                      <TextBlock Text="{Binding Counts.Loads}" Style="{StaticResource MonoCaption}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <TextBlock Text="RESULTS" Style="{StaticResource MonoCaption}" FontSize="11" Margin="0,12,0,2" />
+                    <Grid>
+                      <CheckBox Style="{StaticResource LayerCheckBox}" Content="Over-capacity members" IsChecked="{Binding KeepOverCapacity, Mode=TwoWay, Converter={StaticResource Checked}}" />
+                      <TextBlock Text="{Binding Counts.OverCapacity}" Style="{StaticResource MonoCaption}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                    <Grid>
+                      <CheckBox Style="{StaticResource LayerCheckBox}" Content="Member forces" IsChecked="{Binding KeepMemberForces, Mode=TwoWay, Converter={StaticResource Checked}}" />
+                      <TextBlock Text="{Binding Counts.MemberForces}" Style="{StaticResource MonoCaption}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                    <Grid>
+                      <CheckBox Style="{StaticResource LayerCheckBox}" Content="Reactions" IsChecked="{Binding KeepReactions, Mode=TwoWay, Converter={StaticResource Checked}}" />
+                      <TextBlock Text="{Binding Counts.Reactions}" Style="{StaticResource MonoCaption}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                    <Grid>
+                      <CheckBox Style="{StaticResource LayerCheckBox}" Content="Deflected shape" IsChecked="{Binding KeepDeflection, Mode=TwoWay, Converter={StaticResource Checked}}" />
+                      <TextBlock Text="{Binding ExaggerationText}" Style="{StaticResource MonoCaption}" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <TextBlock Text="ANNOTATIONS" Style="{StaticResource MonoCaption}" FontSize="11" Margin="0,12,0,2" />
+                    <CheckBox Style="{StaticResource LayerCheckBox}" Content="Part names" IsChecked="{Binding KeepPartNames, Mode=TwoWay, Converter={StaticResource Checked}}" />
+                    <CheckBox Style="{StaticResource LayerCheckBox}" Content="Legend and figure tags" IsChecked="{Binding KeepLegend, Mode=TwoWay, Converter={StaticResource Checked}}" />
+
+                    <TextBlock Text="PANELS" Style="{StaticResource MonoCaption}" FontSize="11" Margin="0,12,0,2" />
+                    <CheckBox Style="{StaticResource LayerCheckBox}" Content="Structure list" IsChecked="{Binding KeepStructureList, Mode=TwoWay, Converter={StaticResource Checked}}" />
+                    <CheckBox Style="{StaticResource LayerCheckBox}" Content="Result details in inspector" IsChecked="{Binding KeepResultDetails, Mode=TwoWay, Converter={StaticResource Checked}}" />
+                  </StackPanel>
+
+                  <Rectangle Style="{StaticResource DashedRule}" />
+                  <Grid Padding="16,12">
+                    <Button Style="{StaticResource LinkButton}" Content="RESET TO DEFAULT" Padding="0" Command="{Binding ResetNoiseLayers}" AutomationProperties.Name="Reset layers to default" />
+                    <Button Style="{StaticResource PrimaryButton}" Content="DONE" HorizontalAlignment="Right" Click="OnNoiseDone" AutomationProperties.Name="Done" />
+                  </Grid>
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+        </StackPanel>
+      </Border>
+
+      <Rectangle Width="1" Height="22" Fill="{StaticResource HairlineStrongBrush}" VerticalAlignment="Center" />
+
+      <Button x:Name="SearchButton" Style="{StaticResource QuietButton}" Height="38" Padding="6,0" Command="{Binding TogglePalette}"
+              ToolTipService.ToolTip="Command palette   Ctrl+K" AutomationProperties.Name="Command palette">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <c:Icon Kind="search" Width="14" Height="14" Foreground="{StaticResource InkBrush}" />
+          <Border Style="{StaticResource Keycap}">
+            <TextBlock Text="CTRL K" Style="{StaticResource KeycapText}" />
+          </Border>
+        </StackPanel>
+      </Button>
+      <Button Style="{StaticResource LinkButton}" Content="OPEN" Command="{Binding OpenFile}" ToolTipService.ToolTip="Open   Ctrl+O" AutomationProperties.Name="Open" />
+      <Button Style="{StaticResource PrimaryButton}" Content="SAVE" Command="{Binding SaveFile}" ToolTipService.ToolTip="Save   Ctrl+S" AutomationProperties.Name="Save" />
+    </StackPanel>
+  </Grid>
 </UserControl>

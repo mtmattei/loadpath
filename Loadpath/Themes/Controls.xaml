@@ -21,9 +21,9 @@
   </Style>
   <!-- Section label: mono, small, the "01 Position" register of the drawing sheet. -->
   <Style x:Key="SectionLabel" TargetType="TextBlock">
-    <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+    <Setter Property="FontFamily" Value="{StaticResource MonoFontMedium}" />
     <Setter Property="FontSize" Value="{StaticResource TextCaption}" />
-    <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
     <Setter Property="LineHeight" Value="15" />
   </Style>
   <Style x:Key="TitleText" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
@@ -87,45 +87,56 @@
             <Grid.RenderTransform>
               <ScaleTransform x:Name="RootScale" />
             </Grid.RenderTransform>
+            <!-- Hover wash fades 150 ms, press settles to 0.98, both on EaseSmooth. -->
             <VisualStateManager.VisualStateGroups>
               <VisualStateGroup x:Name="CommonStates">
                 <VisualState x:Name="Normal">
                   <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="{StaticResource DurationFast}" />
-                    <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="{StaticResource DurationFast}" />
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
                   </Storyboard>
                 </VisualState>
                 <VisualState x:Name="PointerOver">
-                  <VisualState.Setters>
-                    <Setter Target="Hover.Opacity" Value="1" />
-                  </VisualState.Setters>
                   <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="{StaticResource DurationFast}" />
-                    <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="{StaticResource DurationFast}" />
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
                   </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Pressed">
-                  <VisualState.Setters>
-                    <Setter Target="Hover.Opacity" Value="1" />
-                  </VisualState.Setters>
                   <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="{StaticResource PressScale}" Duration="{StaticResource DurationFast}" />
-                    <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY" To="{StaticResource PressScale}" Duration="{StaticResource DurationFast}" />
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0.98" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0.98" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
                   </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Disabled">
                   <VisualState.Setters>
                     <Setter Target="Root.Opacity" Value="0.4" />
                   </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
               </VisualStateGroup>
               <VisualStateGroup x:Name="FocusStates">
-                <VisualState x:Name="Unfocused" />
-                <VisualState x:Name="PointerFocused" />
+                <VisualState x:Name="Unfocused">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
+                <VisualState x:Name="PointerFocused">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
                 <VisualState x:Name="Focused">
-                  <VisualState.Setters>
-                    <Setter Target="FocusRing.Opacity" Value="1" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
               </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
@@ -156,15 +167,17 @@
   <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
     <Setter Property="Background" Value="{StaticResource AccentBrush}" />
     <Setter Property="Foreground" Value="{StaticResource AccentInkBrush}" />
-    <Setter Property="FontFamily" Value="{StaticResource UiFontSemiBold}" />
-    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="FontFamily" Value="{StaticResource MonoFontMedium}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Padding" Value="18,0" />
     <Setter Property="Height" Value="38" />
     <Setter Property="MinHeight" Value="38" />
   </Style>
 
   <Style x:Key="LinkButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
     <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
-    <Setter Property="FontFamily" Value="{StaticResource UiFontMedium}" />
+    <Setter Property="FontFamily" Value="{StaticResource MonoFontMedium}" />
+    <Setter Property="FontSize" Value="12" />
     <Setter Property="Height" Value="38" />
     <Setter Property="MinHeight" Value="38" />
   </Style>
@@ -172,12 +185,15 @@
   <Style x:Key="OutlineButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
     <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
     <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="FontFamily" Value="{StaticResource MonoFontMedium}" />
+    <Setter Property="FontSize" Value="12" />
     <Setter Property="Padding" Value="12,0" />
   </Style>
 
   <Style x:Key="DangerTextButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
     <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
-    <Setter Property="FontFamily" Value="{StaticResource UiFontMedium}" />
+    <Setter Property="FontFamily" Value="{StaticResource MonoFontMedium}" />
+    <Setter Property="FontSize" Value="12" />
     <Setter Property="Padding" Value="0" />
     <Setter Property="HorizontalAlignment" Value="Left" />
   </Style>
@@ -195,7 +211,7 @@
     <Setter Property="Width" Value="40" />
     <Setter Property="Height" Value="40" />
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
     <Setter Property="UseSystemFocusVisuals" Value="False" />
     <Setter Property="IsTabStop" Value="True" />
     <Setter Property="Template">
@@ -209,56 +225,73 @@
               <VisualStateGroup x:Name="CommonStates">
                 <VisualState x:Name="Normal">
                   <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="{StaticResource DurationFast}" />
-                    <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="{StaticResource DurationFast}" />
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
                   </Storyboard>
                 </VisualState>
                 <VisualState x:Name="PointerOver">
-                  <VisualState.Setters>
-                    <Setter Target="Hover.Opacity" Value="1" />
-                  </VisualState.Setters>
                   <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="{StaticResource DurationFast}" />
-                    <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="{StaticResource DurationFast}" />
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
                   </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Pressed">
-                  <VisualState.Setters>
-                    <Setter Target="Hover.Opacity" Value="1" />
-                  </VisualState.Setters>
                   <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="{StaticResource PressScale}" Duration="{StaticResource DurationFast}" />
-                    <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY" To="{StaticResource PressScale}" Duration="{StaticResource DurationFast}" />
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0.98" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0.98" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
                   </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Disabled">
                   <VisualState.Setters>
                     <Setter Target="Root.Opacity" Value="0.4" />
                   </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleY"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
               </VisualStateGroup>
+              <!-- The active tool's wash cross-fades in 150 ms rather than switching. -->
               <VisualStateGroup x:Name="ActiveStates">
-                <VisualState x:Name="Inactive" />
+                <VisualState x:Name="Inactive">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ActiveWash" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
                 <VisualState x:Name="Active">
                   <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
-                    <Setter Target="Chrome.BorderBrush" Value="{StaticResource AccentBorderBrush}" />
-                    <Setter Target="Glyph.Foreground" Value="{StaticResource AccentBrush}" />
                     <Setter Target="Key.Foreground" Value="{StaticResource AccentBrush}" />
                   </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ActiveWash" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
               </VisualStateGroup>
               <VisualStateGroup x:Name="FocusStates">
-                <VisualState x:Name="Unfocused" />
-                <VisualState x:Name="PointerFocused" />
+                <VisualState x:Name="Unfocused">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
+                <VisualState x:Name="PointerFocused">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
                 <VisualState x:Name="Focused">
-                  <VisualState.Setters>
-                    <Setter Target="FocusRing.Opacity" Value="1" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
               </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
-            <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="Transparent" BorderThickness="1" CornerRadius="{StaticResource RadiusField}" />
+            <Border x:Name="Chrome" Background="{TemplateBinding Background}" CornerRadius="{StaticResource RadiusField}" />
+            <Border x:Name="ActiveWash" Opacity="0" IsHitTestVisible="False" Background="{StaticResource AccentSoftBrush}"
+                    BorderBrush="{StaticResource AccentBorderBrush}" BorderThickness="1" CornerRadius="{StaticResource RadiusField}" />
             <Border x:Name="Hover" Opacity="0" IsHitTestVisible="False" Background="{StaticResource HoverWashBrush}" CornerRadius="{StaticResource RadiusField}" />
             <c:Icon x:Name="Glyph" Kind="{TemplateBinding IconKind}" Foreground="{TemplateBinding Foreground}" Width="18" Height="18" Margin="-4,-4,0,0" />
             <TextBlock x:Name="Key" Text="{TemplateBinding KeyLabel}" FontFamily="{StaticResource MonoFont}" FontSize="9" Foreground="{StaticResource InkSecondaryBrush}"
@@ -272,8 +305,8 @@
   </Style>
 
   <!--
-    Segment toggle: one cell of a joined segmented control (title display mode, support kind).
-    The group Border around the cells draws the outer frame; checked cells fill with the accent wash and show a check.
+    Segment toggle: one cell of a joined segmented control (display mode, support kind). Uppercase mono label;
+    the checked cell's accent wash and outline cross-fade in 150 ms on EaseSmooth. The group Border draws the outer frame.
   -->
   <Style x:Key="SegmentToggle" TargetType="ToggleButton">
     <Setter Property="Background" Value="Transparent" />
@@ -283,8 +316,8 @@
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="MinWidth" Value="0" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
-    <Setter Property="FontFamily" Value="{StaticResource UiFontMedium}" />
-    <Setter Property="FontSize" Value="{StaticResource TextBody}" />
+    <Setter Property="FontFamily" Value="{StaticResource MonoFontMedium}" />
+    <Setter Property="FontSize" Value="12" />
     <Setter Property="UseSystemFocusVisuals" Value="False" />
     <Setter Property="Template">
       <Setter.Value>
@@ -292,65 +325,86 @@
           <Grid>
             <VisualStateManager.VisualStateGroups>
               <VisualStateGroup x:Name="CommonStates">
-                <VisualState x:Name="Normal" />
+                <VisualState x:Name="Normal">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Wash" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
                 <VisualState x:Name="PointerOver">
-                  <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceHoverBrush}" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Wash" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Pressed">
-                  <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceHoverBrush}" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Wash" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Disabled">
                   <VisualState.Setters>
-                    <Setter Target="Content.Opacity" Value="0.4" />
+                    <Setter Target="Label.Opacity" Value="0.4" />
                   </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Wash" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Checked">
-                  <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
-                    <Setter Target="Check.Visibility" Value="Visible" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Wash" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="CheckedPointerOver">
-                  <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
-                    <Setter Target="Check.Visibility" Value="Visible" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Wash" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="CheckedPressed">
-                  <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
-                    <Setter Target="Check.Visibility" Value="Visible" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Wash" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="CheckedDisabled">
                   <VisualState.Setters>
-                    <Setter Target="Content.Opacity" Value="0.4" />
-                    <Setter Target="Check.Visibility" Value="Visible" />
+                    <Setter Target="Label.Opacity" Value="0.4" />
                   </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Wash" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
               </VisualStateGroup>
               <VisualStateGroup x:Name="FocusStates">
-                <VisualState x:Name="Unfocused" />
-                <VisualState x:Name="PointerFocused" />
+                <VisualState x:Name="Unfocused">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
+                <VisualState x:Name="PointerFocused">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
                 <VisualState x:Name="Focused">
-                  <VisualState.Setters>
-                    <Setter Target="FocusRing.Opacity" Value="1" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
               </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
             <Border x:Name="Chrome" Background="{TemplateBinding Background}" />
-            <StackPanel x:Name="Content" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}">
-              <c:Icon x:Name="Check" Kind="check" Width="13" Height="13" Visibility="Collapsed" Foreground="{TemplateBinding Foreground}" />
-              <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
-                                FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" VerticalAlignment="Center" />
-            </StackPanel>
+            <Border x:Name="Hover" Opacity="0" IsHitTestVisible="False" Background="{StaticResource SurfaceHoverBrush}" />
+            <Border x:Name="Wash" Opacity="0" IsHitTestVisible="False" Background="{StaticResource AccentSoftBrush}" BorderBrush="{StaticResource AccentBrush}" BorderThickness="1" />
+            <ContentPresenter x:Name="Label" Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" Margin="{TemplateBinding Padding}"
+                              FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" HorizontalAlignment="Center" VerticalAlignment="Center" />
             <Border x:Name="FocusRing" Opacity="0" IsHitTestVisible="False" Margin="1"
-                    BorderBrush="{StaticResource AccentBrush}" BorderThickness="1.5" CornerRadius="3" />
+                    BorderBrush="{StaticResource AccentBrush}" BorderThickness="1.5" CornerRadius="2" />
           </Grid>
         </ControlTemplate>
       </Setter.Value>
@@ -359,93 +413,195 @@
 
   <!-- Frame around a group of SegmentToggles; cells are separated by 1 px rules placed between them. -->
   <Style x:Key="SegmentGroup" TargetType="Border">
-    <Setter Property="BorderBrush" Value="{StaticResource InkSecondaryBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="2" />
     <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
   </Style>
 
-  <!-- Pill toggle: status-bar view options. Checked = accent wash + check; unchecked = plain label. -->
-  <Style x:Key="PillToggle" TargetType="ToggleButton" BasedOn="{StaticResource SegmentToggle}">
-    <Setter Property="Height" Value="30" />
-    <Setter Property="Padding" Value="10,0" />
-    <Setter Property="HorizontalAlignment" Value="Left" />
+  <!--
+    Switch toggle (Reduce noise): a 30 x 16 track with a sliding knob, then the label content.
+    The knob travels 14 px in 200 ms and the accent track cross-fades in 150 ms, both on EaseSmooth.
+    Built on ToggleButton rather than ToggleSwitch so the whole labelled cell is the hit target and sits inside a split control.
+  -->
+  <Style x:Key="SwitchToggle" TargetType="ToggleButton">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="Height" Value="38" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="FontFamily" Value="{StaticResource MonoFontMedium}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="UseSystemFocusVisuals" Value="False" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="ToggleButton">
-          <Grid>
+          <Grid Background="Transparent">
             <VisualStateManager.VisualStateGroups>
               <VisualStateGroup x:Name="CommonStates">
-                <VisualState x:Name="Normal" />
+                <VisualState x:Name="Normal">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TrackOn" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="KnobShift" Storyboard.TargetProperty="X"><SplineDoubleKeyFrame KeyTime="0:0:0.200" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
                 <VisualState x:Name="PointerOver">
-                  <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceHoverBrush}" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TrackOn" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="KnobShift" Storyboard.TargetProperty="X"><SplineDoubleKeyFrame KeyTime="0:0:0.200" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Pressed">
-                  <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceHoverBrush}" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TrackOn" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="KnobShift" Storyboard.TargetProperty="X"><SplineDoubleKeyFrame KeyTime="0:0:0.200" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Disabled">
                   <VisualState.Setters>
-                    <Setter Target="Content.Opacity" Value="0.4" />
+                    <Setter Target="Body.Opacity" Value="0.4" />
                   </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TrackOn" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="KnobShift" Storyboard.TargetProperty="X"><SplineDoubleKeyFrame KeyTime="0:0:0.200" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Checked">
-                  <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
-                    <Setter Target="Check.Visibility" Value="Visible" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TrackOn" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="KnobShift" Storyboard.TargetProperty="X"><SplineDoubleKeyFrame KeyTime="0:0:0.200" Value="14" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="CheckedPointerOver">
-                  <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
-                    <Setter Target="Check.Visibility" Value="Visible" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TrackOn" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="KnobShift" Storyboard.TargetProperty="X"><SplineDoubleKeyFrame KeyTime="0:0:0.200" Value="14" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="CheckedPressed">
-                  <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
-                    <Setter Target="Check.Visibility" Value="Visible" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TrackOn" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="KnobShift" Storyboard.TargetProperty="X"><SplineDoubleKeyFrame KeyTime="0:0:0.200" Value="14" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="CheckedDisabled">
                   <VisualState.Setters>
-                    <Setter Target="Content.Opacity" Value="0.4" />
-                    <Setter Target="Check.Visibility" Value="Visible" />
+                    <Setter Target="Body.Opacity" Value="0.4" />
                   </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TrackOn" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="KnobShift" Storyboard.TargetProperty="X"><SplineDoubleKeyFrame KeyTime="0:0:0.200" Value="14" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
               </VisualStateGroup>
               <VisualStateGroup x:Name="FocusStates">
-                <VisualState x:Name="Unfocused" />
-                <VisualState x:Name="PointerFocused" />
+                <VisualState x:Name="Unfocused">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
+                <VisualState x:Name="PointerFocused">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
                 <VisualState x:Name="Focused">
-                  <VisualState.Setters>
-                    <Setter Target="FocusRing.Opacity" Value="1" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
               </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
-            <Border x:Name="Chrome" Background="{TemplateBinding Background}" CornerRadius="15" />
-            <StackPanel x:Name="Content" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}">
-              <c:Icon x:Name="Check" Kind="check" Width="12" Height="12" Visibility="Collapsed" Foreground="{TemplateBinding Foreground}" />
+            <Border x:Name="Hover" Opacity="0" Background="{StaticResource SurfaceHoverBrush}" />
+            <StackPanel x:Name="Body" Orientation="Horizontal" Spacing="10" Margin="{TemplateBinding Padding}" VerticalAlignment="Center">
+              <Grid Width="30" Height="16" VerticalAlignment="Center">
+                <Rectangle RadiusX="8" RadiusY="8" Fill="{StaticResource HairlineStrongBrush}" />
+                <Rectangle x:Name="TrackOn" Opacity="0" RadiusX="8" RadiusY="8" Fill="{StaticResource AccentBrush}" />
+                <Ellipse Width="12" Height="12" Fill="{StaticResource AccentInkBrush}" HorizontalAlignment="Left" Margin="2,0,0,0">
+                  <Ellipse.RenderTransform>
+                    <TranslateTransform x:Name="KnobShift" X="0" />
+                  </Ellipse.RenderTransform>
+                </Ellipse>
+              </Grid>
               <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
-                                FontFamily="{TemplateBinding FontFamily}" FontSize="12" VerticalAlignment="Center" />
+                                FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" VerticalAlignment="Center" />
             </StackPanel>
-            <Border x:Name="FocusRing" Opacity="0" IsHitTestVisible="False" Margin="-2"
-                    BorderBrush="{StaticResource AccentBrush}" BorderThickness="1.5" CornerRadius="17" />
+            <Border x:Name="FocusRing" Opacity="0" IsHitTestVisible="False" Margin="1"
+                    BorderBrush="{StaticResource AccentBrush}" BorderThickness="1.5" CornerRadius="2" />
           </Grid>
         </ControlTemplate>
       </Setter.Value>
     </Setter>
   </Style>
 
+  <!-- Keycap: a keyboard hint ("F", "CTRL K") inside a button or label. -->
+  <Style x:Key="Keycap" TargetType="Border">
+    <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="Padding" Value="5,1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style x:Key="KeycapText" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="LineHeight" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
+  </Style>
+
+  <!-- Dashed rule: the sheet's separator. A zero-height rectangle so its top and bottom strokes coincide. -->
+  <Style x:Key="DashedRule" TargetType="Rectangle">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Stroke" Value="{StaticResource HairlineBrush}" />
+    <Setter Property="StrokeThickness" Value="1" />
+    <Setter Property="StrokeDashArray" Value="3,3" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
+
+  <!-- CheckBox: lightweight keys only, so the platform template keeps its states and accessibility. -->
+  <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="{StaticResource AccentColor}" />
+  <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="{StaticResource AccentColor}" />
+  <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="{StaticResource AccentColor}" />
+  <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="{StaticResource AccentColor}" />
+  <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUnchecked" Color="{StaticResource HairlineStrongColor}" />
+  <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" Color="{StaticResource InkSecondaryColor}" />
+  <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillUnchecked" Color="{StaticResource SurfaceColor}" />
+  <SolidColorBrush x:Key="CheckBoxForegroundUnchecked" Color="{StaticResource InkColor}" />
+  <SolidColorBrush x:Key="CheckBoxForegroundChecked" Color="{StaticResource InkColor}" />
+
+  <Style x:Key="LayerCheckBox" TargetType="CheckBox">
+    <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+    <Setter Property="FontSize" Value="{StaticResource TextBody}" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="8,0,0,0" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <!-- Sheet flyout: paper surface, hairline frame, no inner padding (content owns its gutters). -->
+  <Style x:Key="SheetFlyoutPresenter" TargetType="FlyoutPresenter">
+    <Setter Property="Background" Value="{StaticResource CanvasBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MaxWidth" Value="400" />
+    <Setter Property="MaxHeight" Value="760" />
+  </Style>
+
   <!-- Numeric field: mono value, unit suffix supplied by the NumberField control around it. -->
   <Style x:Key="FieldTextBox" TargetType="TextBox">
     <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
     <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
-    <Setter Property="BorderBrush" Value="{StaticResource InkSecondaryBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
     <Setter Property="FontSize" Value="{StaticResource TextValue}" />
@@ -460,23 +616,35 @@
       <Setter.Value>
         <ControlTemplate TargetType="TextBox">
           <Grid>
+            <!-- Border colour cross-fades (ink on hover, accent on focus) in 150 ms rather than switching. -->
             <VisualStateManager.VisualStateGroups>
               <VisualStateGroup x:Name="CommonStates">
-                <VisualState x:Name="Normal" />
+                <VisualState x:Name="Normal">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="HoverEdge" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusEdge" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
                 <VisualState x:Name="PointerOver">
-                  <VisualState.Setters>
-                    <Setter Target="Chrome.BorderBrush" Value="{StaticResource InkBrush}" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="HoverEdge" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusEdge" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Focused">
-                  <VisualState.Setters>
-                    <Setter Target="Chrome.BorderBrush" Value="{StaticResource AccentBrush}" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="HoverEdge" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusEdge" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Disabled">
                   <VisualState.Setters>
                     <Setter Target="Chrome.Opacity" Value="0.4" />
                   </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="HoverEdge" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="FocusEdge" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
               </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
@@ -488,6 +656,8 @@
                             IsTabStop="False" ZoomMode="Disabled"
                             Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
             </Border>
+            <Border x:Name="HoverEdge" Opacity="0" IsHitTestVisible="False" BorderBrush="{StaticResource InkBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" />
+            <Border x:Name="FocusEdge" Opacity="0" IsHitTestVisible="False" BorderBrush="{StaticResource AccentBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" />
           </Grid>
         </ControlTemplate>
       </Setter.Value>
@@ -507,7 +677,7 @@
 
   <!-- ===== Menus, tooltips ===== -->
   <Style TargetType="MenuFlyoutPresenter">
-    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="Background" Value="{StaticResource CanvasBrush}" />
     <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusPopover}" />
@@ -527,28 +697,36 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="MenuFlyoutItem">
-          <Grid x:Name="LayoutRoot" Background="{TemplateBinding Background}" CornerRadius="{StaticResource RadiusField}" Padding="{TemplateBinding Padding}">
+          <Grid x:Name="LayoutRoot" Background="{TemplateBinding Background}" CornerRadius="{StaticResource RadiusField}">
             <VisualStateManager.VisualStateGroups>
               <VisualStateGroup x:Name="CommonStates">
-                <VisualState x:Name="Normal" />
+                <VisualState x:Name="Normal">
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
+                </VisualState>
                 <VisualState x:Name="PointerOver">
-                  <VisualState.Setters>
-                    <Setter Target="LayoutRoot.Background" Value="{StaticResource SurfaceHoverBrush}" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Pressed">
-                  <VisualState.Setters>
-                    <Setter Target="LayoutRoot.Background" Value="{StaticResource SurfaceHoverBrush}" />
-                  </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="1" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Disabled">
                   <VisualState.Setters>
-                    <Setter Target="LayoutRoot.Opacity" Value="0.4" />
+                    <Setter Target="Content.Opacity" Value="0.4" />
                   </VisualState.Setters>
+                  <Storyboard>
+                    <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity"><SplineDoubleKeyFrame KeyTime="0:0:0.150" Value="0" KeySpline="0.22,1 0.36,1" /></DoubleAnimationUsingKeyFrames>
+                  </Storyboard>
                 </VisualState>
               </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
-            <Grid ColumnSpacing="16">
+            <Border x:Name="Hover" Opacity="0" Background="{StaticResource SurfaceHoverBrush}" CornerRadius="{StaticResource RadiusField}" />
+            <Grid x:Name="Content" ColumnSpacing="16" Padding="{TemplateBinding Padding}">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -598,40 +776,6 @@
     </Setter>
   </Style>
 
-  <!-- Compact slider: 4 px track, 14 px accent thumb. -->
-  <Style x:Key="CompactSlider" TargetType="Slider">
-    <Setter Property="Background" Value="{StaticResource HairlineStrongBrush}" />
-    <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
-    <Setter Property="Height" Value="20" />
-    <Setter Property="MinWidth" Value="60" />
-    <Setter Property="IsThumbToolTipEnabled" Value="False" />
-    <Setter Property="UseSystemFocusVisuals" Value="False" />
-    <Setter Property="Template">
-      <Setter.Value>
-        <ControlTemplate TargetType="Slider">
-          <Grid x:Name="SliderContainer" Background="Transparent">
-            <Grid x:Name="HorizontalTemplate" Height="20">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-              </Grid.ColumnDefinitions>
-              <Rectangle x:Name="HorizontalTrackRect" Grid.ColumnSpan="3" Height="4" Fill="{TemplateBinding Background}" VerticalAlignment="Center" RadiusX="2" RadiusY="2" />
-              <Rectangle x:Name="HorizontalDecreaseRect" Height="4" Fill="{TemplateBinding Foreground}" VerticalAlignment="Center" RadiusX="2" RadiusY="2" />
-              <Thumb x:Name="HorizontalThumb" Grid.Column="1" Width="14" Height="14" AutomationProperties.AccessibilityView="Raw">
-                <Thumb.Template>
-                  <ControlTemplate TargetType="Thumb">
-                    <Ellipse Width="14" Height="14" Fill="{StaticResource AccentBrush}" Stroke="{StaticResource CanvasBrush}" StrokeThickness="2" />
-                  </ControlTemplate>
-                </Thumb.Template>
-              </Thumb>
-            </Grid>
-          </Grid>
-        </ControlTemplate>
-      </Setter.Value>
-    </Setter>
-  </Style>
-
   <!-- NumberField: mono value + unit suffix. -->
   <Style TargetType="c:NumberField">
     <Setter Property="Height" Value="40" />
@@ -649,24 +793,17 @@
     </Setter>
   </Style>
 
-  <!-- UtilizationBar: 4 px track, fill scaled by Value. -->
-  <Style TargetType="c:UtilizationBar">
+  <!-- Utilization bar: a determinate ProgressBar (0..1), 4 px track. Lightweight key thickens the default 1 px track. -->
+  <x:Double x:Key="ProgressBarTrackHeight">4</x:Double>
+  <Style x:Key="UtilizationBarStyle" TargetType="ProgressBar">
+    <Setter Property="Minimum" Value="0" />
+    <Setter Property="Maximum" Value="1" />
+    <Setter Property="MinHeight" Value="4" />
     <Setter Property="Height" Value="4" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="Background" Value="{StaticResource HairlineBrush}" />
     <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
-    <Setter Property="Template">
-      <Setter.Value>
-        <ControlTemplate TargetType="c:UtilizationBar">
-          <Grid>
-            <Rectangle Fill="{StaticResource HairlineBrush}" RadiusX="2" RadiusY="2" />
-            <Rectangle Fill="{TemplateBinding Foreground}" RadiusX="2" RadiusY="2" HorizontalAlignment="Stretch" RenderTransformOrigin="0,0.5">
-              <Rectangle.RenderTransform>
-                <ScaleTransform ScaleX="{Binding Value, RelativeSource={RelativeSource TemplatedParent}}" />
-              </Rectangle.RenderTransform>
-            </Rectangle>
-          </Grid>
-        </ControlTemplate>
-      </Setter.Value>
-    </Setter>
+    <Setter Property="IsTabStop" Value="False" />
   </Style>
 </ResourceDictionary>

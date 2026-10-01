@@ -1,5 +1,4 @@
 using Loadpath.Core.Model;
-using Loadpath.Core.Viewport;
 
 namespace Loadpath.Core.Geometry;
 

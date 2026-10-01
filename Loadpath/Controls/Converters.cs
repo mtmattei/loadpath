@@ -1,6 +1,4 @@
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Media;
 
 namespace Loadpath.Controls;
 
@@ -15,6 +13,13 @@ public sealed class BoolToVisibilityConverter : IValueConverter
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language) => value is Visibility.Visible;
+}
+
+/// <summary>string → upper case, for bound labels in the uppercase mono register (document name).</summary>
+public sealed class UpperCaseConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language) => (value as string ?? "").ToUpperInvariant();
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotSupportedException();
 }
 
 /// <summary>Non-empty string → Visible.</summary>

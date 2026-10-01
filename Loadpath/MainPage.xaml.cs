@@ -1,13 +1,11 @@
+using Loadpath.Controls;
 using Loadpath.Commands;
 using Loadpath.Core.Editing;
-using Loadpath.Core.Geometry;
 using Loadpath.Core.Serialization;
 using Loadpath.Presentation;
 using Loadpath.Services;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
 using Windows.Foundation;
 using Windows.System;
 
@@ -49,11 +47,13 @@ public sealed partial class MainPage : Page
         });
 
         Engine.ToastRequested += (_, msg) => ShowToast(msg);
-        Engine.SelectionChanged += (_, _) => { UpdateFloatingBar(); FadeInspector(); EnsureKeyboardTarget(); };
+        Engine.SelectionChanged += (_, _) => { UpdateFloatingBar(glide: true); EnsureKeyboardTarget(); };
         Engine.ViewportChanged += (_, _) => UpdateFloatingBar();
         Engine.AnalysisChanged += (_, _) => { UpdateFloatingBar(); ScheduleAutosave(); };
-        Engine.OptionsChanged += (_, _) => { ApplyInspectorVisibility(); PersistSettings(); };
+        Engine.OptionsChanged += (_, _) => PersistSettings();
         Engine.Interaction.ToolChanged += (_, _) => UpdateFloatingBar();
+        // The bar's label and buttons are bound, so its width settles after the binding; re-anchor when it does.
+        FloatingBar.SizeChanged += (_, _) => UpdateFloatingBar();
         Workspace.ContextMenuRequested += OnContextMenuRequested;
         Workspace.FocusRequested += (_, _) => KeySink.Focus(FocusState.Programmatic);
         Inspector.SectionDragStarted += OnSectionDragStarted;
@@ -73,12 +73,12 @@ public sealed partial class MainPage : Page
 #endif
         Root.AddHandler(KeyUpEvent, new KeyEventHandler(OnRootKeyUp), true);
         Loaded += OnLoaded;
-        ApplyInspectorVisibility();
     }
 
     public EditorEngine Engine { get; }
     public EditorModel Model { get; }
 
+    // xaml-lint: allow codebehind - startup: autosave restore and the X11 launch-size re-assert (no XAML surface)
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         KeySink.Focus(FocusState.Programmatic);
@@ -113,31 +113,6 @@ public sealed partial class MainPage : Page
             };
             timer.Start();
         }
-        Root.SizeChanged += (_, args) => ApplyResponsiveLayout(args.NewSize.Width);
-        ApplyResponsiveLayout(ActualWidth);
-    }
-
-    private bool _autoCollapsedInspector;
-
-    /// <summary>Below 1100 px the inspector column gives way to the canvas; it comes back when there is room.</summary>
-    private void ApplyResponsiveLayout(double width)
-    {
-        if (width <= 0) return;
-        if (width < 1100 && Engine.Options.InspectorVisible)
-        {
-            _autoCollapsedInspector = true;
-            Engine.Options.InspectorVisible = false;
-        }
-        else if (width >= 1100 && _autoCollapsedInspector && !Engine.Options.InspectorVisible)
-        {
-            _autoCollapsedInspector = false;
-            Engine.Options.InspectorVisible = true;
-        }
-        // The structure outline yields next, below 1240 px; the floating tool palette only on very narrow windows.
-        var showStructure = width >= 1240;
-        StructureColumn.Width = showStructure ? new GridLength(240) : new GridLength(0);
-        StructureHost.Visibility = showStructure ? Visibility.Visible : Visibility.Collapsed;
-        Rail.Visibility = width < 640 ? Visibility.Collapsed : Visibility.Visible;
     }
 
     // ---- startup: autosave restore, DEBUG fixture hooks ----
@@ -194,6 +169,7 @@ public sealed partial class MainPage : Page
                     case "reactions": Engine.Options.ShowReactions = true; break;
                     case "nolabels": Engine.Options.ShowLabels = false; break;
                     case "labels": Engine.Options.ShowLabels = true; break;
+                    case "noise": Engine.Options.ReduceNoise = true; break;
                 }
             }
         }
@@ -226,6 +202,7 @@ public sealed partial class MainPage : Page
         {
             if (XamlRoot is not { } root) return;
             var focused = FocusManager.GetFocusedElement(root);
+            // xaml-lint: allow codebehind - reads Visibility to find a detached focus target; sets nothing
             var detached = focused is FrameworkElement fe && (fe.XamlRoot is null || !fe.IsLoaded || fe.Visibility == Visibility.Collapsed);
             if (focused is null || detached) KeySink.Focus(FocusState.Programmatic);
         });
@@ -237,7 +214,8 @@ public sealed partial class MainPage : Page
         return focused is TextBox or PasswordBox or RichEditBox;
     }
 
-    private void OnRootKeyDown(object sender, KeyRoutedEventArgs e)
+    // xaml-lint: allow codebehind - editor-wide shortcut routing (handledEventsToo), tools get first refusal
+    private async void OnRootKeyDown(object sender, KeyRoutedEventArgs e)
     {
         var ctrl = IsDown(VirtualKey.Control);
         var shift = IsDown(VirtualKey.Shift);
@@ -251,13 +229,14 @@ public sealed partial class MainPage : Page
         if (XamlRoot is { } xr && IsTextInputFocused(xr))
         {
             // The palette shortcut works from anywhere, including a focused number field.
-            if (ctrl && key == VirtualKey.K && Palette.Visibility != Visibility.Visible) { _ = Model.TogglePalette(default); e.Handled = true; return; }
+            if (ctrl && key == VirtualKey.K && Palette.Visibility != Visibility.Visible) { e.Handled = true; await Model.TogglePalette(default); return; }
             if (key == VirtualKey.Escape && Palette.Visibility != Visibility.Visible) { KeySink.Focus(FocusState.Programmatic); e.Handled = true; }
             return;
         }
+        // xaml-lint: allow codebehind - reads the palette's Visibility to route Esc; sets nothing
         if (Palette.Visibility == Visibility.Visible)
         {
-            if (key == VirtualKey.Escape) { _ = Model.ClosePalette(default); e.Handled = true; }
+            if (key == VirtualKey.Escape) { e.Handled = true; await Model.ClosePalette(default); }
             return;
         }
 
@@ -271,6 +250,7 @@ public sealed partial class MainPage : Page
         if (command.TryExecute()) e.Handled = true;
     }
 
+    // xaml-lint: allow codebehind - releases held keys (Space pan, Shift axis lock) in the interaction engine
     private void OnRootKeyUp(object sender, KeyRoutedEventArgs e) => Engine.Interaction.KeyUp(e.Key);
 
     private static bool IsDown(VirtualKey key) =>
@@ -278,6 +258,7 @@ public sealed partial class MainPage : Page
 
     // ---- context menu ----
 
+    // xaml-lint: allow codebehind - the menu depends on the canvas hit test at the pointer
     private void OnContextMenuRequested(object? sender, (Point Position, HitResult Hit) args)
     {
         var menu = new MenuFlyout { Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft };
@@ -338,51 +319,74 @@ public sealed partial class MainPage : Page
 
     // ---- floating selection bar ----
 
-    private void UpdateFloatingBar()
+    /// <summary>
+    /// The bar follows the selection through the viewport transform, so its position (and whether there is anything
+    /// to anchor to) is computed here; its contents are bound to the inspector state.
+    /// </summary>
+    private bool _barShown;
+    private Thickness _barAt;
+
+    /// <param name="glide">True for a selection change: the bar travels to the new anchor. Viewport moves follow at once.</param>
+    private void UpdateFloatingBar(bool glide = false)
     {
         var sel = Engine.Selection;
-        if (sel.IsEmpty || Engine.Interaction.ActiveTool != ToolKind.Select || Engine.Interaction.IsBusy)
-        {
-            FloatingBar.Visibility = Visibility.Collapsed;
-            return;
-        }
-        // Anchor above the selection's screen bounds.
+        if (sel.IsEmpty || Engine.Interaction.ActiveTool != ToolKind.Select || Engine.Interaction.IsBusy) { HideFloatingBar(); return; }
         var bounds = Bounds.Empty;
         foreach (var id in Engine.SelectedNodeIdsIncludingMemberEnds())
         {
             if (Engine.Document.FindNode(id) is { } n) bounds = bounds.Include(Engine.Viewport.ToScreen(n.Position));
         }
-        if (bounds.IsEmpty) { FloatingBar.Visibility = Visibility.Collapsed; return; }
-        FloatSupport.Visibility = sel.NodeCount > 0 ? Visibility.Visible : Visibility.Collapsed;
-        FloatLoad.Visibility = sel.NodeCount > 0 ? Visibility.Visible : Visibility.Collapsed;
-        FloatSplit.Visibility = sel.Single is { IsMember: true } ? Visibility.Visible : Visibility.Collapsed;
-        FloatLabel.Text = sel.Single is { } one ? (one.IsNode ? $"N{one.Id}" : $"M{one.Id}") : $"{sel.Count} sel";
-        FloatingBar.Visibility = Visibility.Visible;
-        FloatingBar.UpdateLayout();
+        if (bounds.IsEmpty) { HideFloatingBar(); return; }
+        // xaml-lint: allow responsive - "has the bar measured yet", not a layout breakpoint
         var w = FloatingBar.ActualWidth > 0 ? FloatingBar.ActualWidth : 150;
         // Up and to the right of the selection, clear of its load arrow; flip left when it would leave the sheet.
         var x = bounds.Max.X + 24;
+        // xaml-lint: allow responsive - clamps the popover inside the canvas; not a layout breakpoint
         if (x + w > WorkspaceHost.ActualWidth - 8) x = bounds.Min.X - 24 - w;
         x = Math.Clamp(x, 32, Math.Max(32, WorkspaceHost.ActualWidth - w - 8));
         var y = bounds.Min.Y - 80;
         if (y < 32) y = bounds.Max.Y + 28;
-        FloatingBar.Margin = new Thickness(x, y, 0, 0);
+        var target = new Thickness(x, y, 0, 0);
+
+        if (!_barShown)
+        {
+            _barShown = true;
+            FloatingBar.Margin = target;
+            // xaml-lint: allow codebehind - the bar's visibility follows the viewport-projected selection bounds
+            FloatingBar.Visibility = Visibility.Visible;
+            Motion.Enter(FloatingBar, rise: 4);
+        }
+        else
+        {
+            FloatingBar.Margin = target;
+            if (glide) Motion.Glide(FloatingBar, _barAt.Left - x, _barAt.Top - y);
+        }
+        _barAt = target;
     }
 
-
-
+    private void HideFloatingBar()
+    {
+        if (!_barShown) return;
+        _barShown = false;
+        // xaml-lint: allow codebehind - collapses once the fade-out has played, unless the bar came back meanwhile
+        Motion.Exit(FloatingBar, () => { if (!_barShown) FloatingBar.Visibility = Visibility.Collapsed; });
+    }
 
     // ---- section drag-and-drop (inspector chip → member on canvas) ----
+    // Pointer tracking across two views (inspector → canvas hit test); there is no XAML drag source for this.
 
+    // xaml-lint: allow codebehind - section drag starts from an inspector chip and ends on a canvas hit test
     private void OnSectionDragStarted(object? sender, Section section)
     {
         _draggingSection = section;
         DragGhostText.Text = section.Name;
         DragGhost.Margin = new Thickness(WorkspaceHost.ActualWidth - 120, 12, 0, 0);
+        // xaml-lint: allow codebehind - the ghost follows the pointer for the life of the drag
         DragGhost.Visibility = Visibility.Visible;
         Engine.Interaction.Hint = "Drop on a member to apply the section · Esc cancels";
     }
 
+    // xaml-lint: allow codebehind - drag tracking, see above
     private void OnHostPointerMoved(object sender, PointerRoutedEventArgs e)
     {
         if (_draggingSection is null) return;
@@ -399,11 +403,13 @@ public sealed partial class MainPage : Page
         }
     }
 
+    // xaml-lint: allow codebehind - drag tracking, see above
     private void OnHostPointerReleased(object sender, PointerRoutedEventArgs e)
     {
         if (_draggingSection is null) return;
         var section = _draggingSection;
         _draggingSection = null;
+        // xaml-lint: allow codebehind - drag ghost ends with the drag
         DragGhost.Visibility = Visibility.Collapsed;
         Engine.Interaction.Overlay.HighlightMember = null;
         if (_dropTargetMember is { } id)
@@ -417,72 +423,25 @@ public sealed partial class MainPage : Page
         Engine.RequestRender();
     }
 
-    // ---- inspector swap: a quick fade so the eye reads a change, not a flash ----
-
-    private int _lastInspectorShape;
-
-    private void FadeInspector()
-    {
-        var sel = Engine.Selection;
-        var shape = sel.IsEmpty ? 0 : sel.Single is { IsNode: true } ? 1 : sel.Single is { IsMember: true } ? 2 : 3;
-        if (shape == _lastInspectorShape) return;
-        _lastInspectorShape = shape;
-        if (!Loadpath.Workspace.MotionSettings.AnimationsEnabled) return;
-        var sb = new Storyboard();
-        var fade = new DoubleAnimationUsingKeyFrames();
-        fade.KeyFrames.Add(new DiscreteDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.Zero), Value = 0.45 });
-        fade.KeyFrames.Add(new SplineDoubleKeyFrame { KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(150)), Value = 1, KeySpline = new KeySpline { ControlPoint1 = new Point(0.22, 1), ControlPoint2 = new Point(0.36, 1) } });
-        Storyboard.SetTarget(fade, Inspector);
-        Storyboard.SetTargetProperty(fade, "Opacity");
-        sb.Children.Add(fade);
-        sb.Begin();
-    }
-
-    // ---- toast ----
+    // ---- toast: rises in on EaseOut (200 ms), fades and drops out (150 ms) ----
 
     private void ShowToast(string message)
     {
         ToastText.Text = message;
-        Toast.Opacity = 1;
-        ToastTranslate.Y = 0;
         _toastTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(2400) };
         _toastTimer.Stop();
         _toastTimer.Tick -= OnToastTick;
         _toastTimer.Tick += OnToastTick;
         _toastTimer.Start();
-        if (Loadpath.Workspace.MotionSettings.AnimationsEnabled)
-        {
-            var sb = new Storyboard();
-            var fade = new DoubleAnimation { From = 0, To = 1, Duration = new Duration(TimeSpan.FromMilliseconds(200)) };
-            Storyboard.SetTarget(fade, Toast);
-            Storyboard.SetTargetProperty(fade, "Opacity");
-            var rise = new DoubleAnimation { From = 6, To = 0, Duration = new Duration(TimeSpan.FromMilliseconds(200)) };
-            Storyboard.SetTarget(rise, ToastTranslate);
-            Storyboard.SetTargetProperty(rise, "Y");
-            sb.Children.Add(fade);
-            sb.Children.Add(rise);
-            sb.Begin();
-        }
+        Motion.Enter(Toast, decorative: true);
     }
 
+    // xaml-lint: allow codebehind - toast lifetime timer
     private void OnToastTick(object? sender, object e)
     {
         _toastTimer?.Stop();
-        Toast.Opacity = 0;
+        Motion.Exit(Toast);
     }
-
-    // ---- inspector visibility ----
-
-    private void ApplyInspectorVisibility()
-    {
-        if (InspectorColumn is null) return;
-        var visible = Engine.Options.InspectorVisible;
-        InspectorColumn.Width = visible ? new GridLength(336) : new GridLength(0);
-        InspectorHost.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-    }
-
-    // ---- samples ----
-
 
     // ---- files, autosave, settings ----
 
@@ -562,10 +521,13 @@ public sealed partial class MainPage : Page
         _autosaveTimer.Start();
     }
 
-    private void OnAutosaveTick(object? sender, object e)
+    // xaml-lint: allow codebehind - debounced autosave timer
+    private async void OnAutosaveTick(object? sender, object e)
     {
         _autosaveTimer?.Stop();
-        try { File.WriteAllText(_settings.AutosavePath, DocumentSerializer.Serialize(Engine.Document)); } catch { /* best effort */ }
+        // Serialize on the UI thread (the document is UI-owned); write off it.
+        var json = DocumentSerializer.Serialize(Engine.Document);
+        try { await File.WriteAllTextAsync(_settings.AutosavePath, json); } catch { /* best effort */ }
     }
 
     private void PersistSettings()

@@ -1,5 +1,4 @@
 using Loadpath.Core.Analysis;
-using Loadpath.Core.Geometry;
 using Loadpath.Presentation;
 using SkiaSharp;
 
@@ -10,7 +9,7 @@ public sealed class RenderSnapshot
 {
     public readonly record struct NodeItem(int ElementId, SKPoint Screen, SKPoint Deflected, SupportKind Support, Vec2 LoadKn, SKPoint LoadTail, Vec2 ReactionKn, bool Selected, bool Hovered, bool Dimmed, Vec2 World);
 
-    public readonly record struct MemberItem(int ElementId, SKPoint A, SKPoint B, SKPoint DeflectedA, SKPoint DeflectedB, double ForceKn, double Utilization, bool Overstressed, bool BucklingGoverns, bool Selected, bool Hovered, bool Dimmed);
+    public readonly record struct MemberItem(int ElementId, SKPoint A, SKPoint B, SKPoint DeflectedA, SKPoint DeflectedB, double ForceKn, double Utilization, bool Overstressed, bool BucklingGoverns, bool Selected, bool Hovered, bool Dimmed, PartKind Part);
 
     public NodeItem[] Nodes { get; init; } = [];
     public MemberItem[] Members { get; init; } = [];
@@ -23,6 +22,15 @@ public sealed class RenderSnapshot
     public bool ShowLabels { get; init; }
     public bool ShowReactions { get; init; }
     public bool ShowGrid { get; init; }
+    // Reduce-noise layers (already combined with their base toggles; see ViewOptions.IsVisible).
+    public bool ShowDimensions { get; init; } = true;
+    public bool ShowSupports { get; init; } = true;
+    public bool ShowLoads { get; init; } = true;
+    public bool ShowOverCapacity { get; init; } = true;
+    public bool ShowPartNames { get; init; } = true;
+    public bool ShowLegend { get; init; } = true;
+    /// <summary>"Roof truss", "Cantilever truss" or "Truss", from the part classifier.</summary>
+    public string StructureKind { get; init; } = "Truss";
     public double GridMinor { get; init; } = 0.5;
     public double GridMajor { get; init; } = 1;
     public ToolOverlay Overlay { get; init; } = new();

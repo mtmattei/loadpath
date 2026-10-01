@@ -1,9 +1,7 @@
-using Loadpath.Core.Analysis;
 using Loadpath.Core.Geometry;
 using Loadpath.Presentation;
 using Loadpath.Workspace.Tools;
 using Microsoft.UI.Input;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using SkiaSharp;
 using Uno.WinUI.Graphics2DSK;
@@ -150,6 +148,12 @@ public sealed partial class WorkspaceView : SKCanvasElement
             nodes[i] = new RenderSnapshot.NodeItem(n.Id, P(s), P(deflected), n.Support, n.Load, P(tail), r?.Reaction ?? Vec2.Zero, isSelected, hover == n.Ref, dim, n.Position);
         }
 
+        // Part names for the annotation layer: classified from world geometry, so they do not change with zoom.
+        var geometry = new (Vec2 A, Vec2 B)[doc.Members.Count];
+        for (var i = 0; i < doc.Members.Count; i++) geometry[i] = (doc.Nodes[nodeIndex[doc.Members[i].StartNodeId]].Position, doc.Nodes[nodeIndex[doc.Members[i].EndNodeId]].Position);
+        var parts = PartClassifier.Classify(geometry);
+        var supports = doc.Nodes.Where(n => n.HasSupport).Select(n => n.Position).ToList();
+
         var members = new RenderSnapshot.MemberItem[doc.Members.Count];
         for (var i = 0; i < doc.Members.Count; i++)
         {
@@ -160,7 +164,7 @@ public sealed partial class WorkspaceView : SKCanvasElement
             var isSelected = sel.Contains(m.Ref);
             var dim = (dimOthers && !isSelected) || (detached?.Contains(m.StartNodeId) ?? false);
             members[i] = new RenderSnapshot.MemberItem(m.Id, a.Screen, b.Screen, a.Deflected, b.Deflected,
-                r?.AxialForceKn ?? 0, r?.Utilization ?? 0, r?.IsOverstressed ?? false, r?.BucklingGoverns ?? false, isSelected, hover == m.Ref, dim);
+                r?.AxialForceKn ?? 0, r?.Utilization ?? 0, r?.IsOverstressed ?? false, r?.BucklingGoverns ?? false, isSelected, hover == m.Ref, dim, parts[i]);
         }
 
         return new RenderSnapshot
@@ -172,10 +176,17 @@ public sealed partial class WorkspaceView : SKCanvasElement
             Scale = vp.Scale,
             Origin = P(vp.ToScreen(Vec2.Zero)),
             Mode = options.DisplayMode,
-            ShowDeflection = options.ShowDeflection,
-            ShowLabels = options.ShowLabels,
-            ShowReactions = options.ShowReactions,
-            ShowGrid = options.ShowGrid,
+            ShowDeflection = options.IsVisible(NoiseLayer.Deflection),
+            ShowLabels = options.IsVisible(NoiseLayer.MemberForces),
+            ShowReactions = options.IsVisible(NoiseLayer.Reactions),
+            ShowGrid = options.IsVisible(NoiseLayer.Grid),
+            ShowDimensions = options.IsVisible(NoiseLayer.Dimensions),
+            ShowSupports = options.IsVisible(NoiseLayer.Supports),
+            ShowLoads = options.IsVisible(NoiseLayer.Loads),
+            ShowOverCapacity = options.IsVisible(NoiseLayer.OverCapacity),
+            ShowPartNames = options.IsVisible(NoiseLayer.PartNames),
+            ShowLegend = options.IsVisible(NoiseLayer.Legend),
+            StructureKind = PartClassifier.Describe(geometry, parts, supports),
             GridMinor = minor,
             GridMajor = major,
             Overlay = ed.Interaction.Overlay,
@@ -326,14 +337,14 @@ public sealed partial class WorkspaceView : SKCanvasElement
     }
 
     /// <summary>
-    /// Fit into the drawing area of the sheet: inside the rulers, clear of the floating tool palette on the left,
+    /// Fit into the drawing area of the sheet: inside the frame, clear of the floating tool palette on the left,
     /// and above the band that holds dimension lines and the figure legend.
     /// </summary>
     private (double Scale, Vec2 Offset) SheetFit(Bounds world)
     {
         var vp = _editor!.Viewport;
         if (world.IsEmpty || vp.ScreenWidth <= 0 || vp.ScreenHeight <= 0) return vp.ComputeFit(world);
-        const double left = 104, top = 120, right = 72, bottom = 200;
+        const double left = 120, top = 110, right = 96, bottom = 210;
         var areaW = Math.Max(120, vp.ScreenWidth - left - right);
         var areaH = Math.Max(120, vp.ScreenHeight - top - bottom);
         var w = Math.Max(world.Width, 1.0);

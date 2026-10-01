@@ -11,5 +11,7 @@
       PRI257: Ignore default language (en) not being one of the included resources (eg en-us, en-uk)
     -->
     <NoWarn>$(NoWarn);NU1507;NETSDK1201;PRI257</NoWarn>
+    <!-- Uno0001: API not implemented on the current Uno target; calling it is a silent no-op. -->
+    <WarningsAsErrors>$(WarningsAsErrors);Uno0001</WarningsAsErrors>
   </PropertyGroup>
 </Project>

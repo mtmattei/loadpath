@@ -1,5 +1,4 @@
 using Loadpath.Core.Editing;
-using Loadpath.Core.Geometry;
 using Loadpath.Presentation;
 using SkiaSharp;
 using Windows.System;

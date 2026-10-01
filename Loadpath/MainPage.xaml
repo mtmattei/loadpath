@@ -5,9 +5,49 @@
       xmlns:v="using:Loadpath.Views"
       xmlns:w="using:Loadpath.Workspace"
       Background="{StaticResource CanvasBrush}">
-  <!-- xaml-lint: allow card - banners, toast and floating bars over the drawing; the project uses no Toolkit (README decision) -->
 
   <Grid x:Name="Root" Background="{StaticResource CanvasBrush}">
+    <!--
+      Width breakpoints. The canvas keeps the room: the structure outline yields first, then the inspector,
+      then the floating tool palette. AdaptiveTrigger is the platform route; the project takes no Toolkit dependency.
+    -->
+    <VisualStateManager.VisualStateGroups>
+      <VisualStateGroup x:Name="WidthStates">
+        <VisualState x:Name="Wide">
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="1240" />
+          </VisualState.StateTriggers>
+        </VisualState>
+        <VisualState x:Name="Medium">
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="1100" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="StructureHost.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState x:Name="Narrow">
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="640" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="StructureHost.Visibility" Value="Collapsed" />
+            <Setter Target="InspectorShell.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState x:Name="Compact">
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="StructureHost.Visibility" Value="Collapsed" />
+            <Setter Target="InspectorShell.Visibility" Value="Collapsed" />
+            <Setter Target="Rail.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
+
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
@@ -18,28 +58,33 @@
 
     <Grid Grid.Row="1">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition x:Name="StructureColumn" Width="240" />
+        <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="*" />
-        <ColumnDefinition x:Name="InspectorColumn" Width="336" />
+        <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
 
       <!-- Structure outline -->
-      <Border x:Name="StructureHost" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,1,0">
-        <v:OutlinePanel x:Name="Outline" />
+      <Border x:Name="StructureHost">
+        <!-- Width yields via the VisualState above; Reduce noise can hide the list too (inner binding, so neither overrides the other). -->
+        <Border Width="{StaticResource StructureWidth}" c:Motion.Reveal="True" Visibility="{Binding ShowStructureList, Converter={StaticResource Vis}}">
+          <v:OutlinePanel x:Name="Outline" />
+        </Border>
       </Border>
 
-      <!-- Workspace host: canvas (with rulers) below, XAML overlay above. -->
+      <!-- Workspace host: the blueprint sheet below, XAML overlay above. -->
       <Grid Grid.Column="1" x:Name="WorkspaceHost">
         <w:WorkspaceView x:Name="Workspace" AutomationProperties.Name="Structure workspace" />
         <c:KeySink x:Name="KeySink" />
 
-        <!-- Floating tool palette, inside the rulers -->
-        <v:ToolRail x:Name="Rail" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="40,40,0,0" />
+        <!-- Floating tool palette, inside the drawing frame -->
+        <v:ToolRail x:Name="Rail" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="40,24,0,0" />
 
         <!-- Mechanism / unsupported banner -->
-        <Border VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,40,0,0" Padding="14,8" CornerRadius="4"
+
+        <!-- xaml-lint: allow card - status banner over the drawing; no Toolkit by README decision -->
+        <Border VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,28,0,0" Padding="14,8" CornerRadius="4"
                 Background="{StaticResource DangerSoftBrush}" BorderBrush="{StaticResource DangerBorderBrush}" BorderThickness="1"
-                Visibility="{Binding Status.IsMechanism, Converter={StaticResource Vis}}" IsHitTestVisible="False">
+                c:Motion.Reveal="True" Visibility="{Binding Status.IsMechanism, Converter={StaticResource Vis}}" IsHitTestVisible="False">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <c:Icon Kind="warning" Foreground="{StaticResource DangerBrush}" Width="14" Height="14" />
             <TextBlock Text="{Binding Status.MechanismText}" Style="{StaticResource BodyText}" Foreground="{StaticResource DangerBrush}" VerticalAlignment="Center" />
@@ -47,9 +92,11 @@
         </Border>
 
         <!-- Detached parts notice (warning, not failure) -->
-        <Border VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,40,0,0" Padding="14,8" CornerRadius="4"
+
+        <!-- xaml-lint: allow card - status banner over the drawing; no Toolkit by README decision -->
+        <Border VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,28,0,0" Padding="14,8" CornerRadius="4"
                 Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineStrongBrush}" BorderThickness="1"
-                Visibility="{Binding Status.HasDetached, Converter={StaticResource Vis}}" IsHitTestVisible="False">
+                c:Motion.Reveal="True" Visibility="{Binding Status.HasDetached, Converter={StaticResource Vis}}" IsHitTestVisible="False">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <c:Icon Kind="warning" Foreground="{StaticResource InkSecondaryBrush}" Width="14" Height="14" />
             <TextBlock Text="{Binding Status.DetachedText}" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
@@ -59,7 +106,7 @@
         <!-- Empty state -->
         <!-- A paper plate behind the text so the registration marks do not run through it. -->
         <Border x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{StaticResource CanvasBrush}" Padding="32,24"
-                Visibility="{Binding Status.IsEmpty, Converter={StaticResource Vis}}">
+                c:Motion.Reveal="True" Visibility="{Binding Status.IsEmpty, Converter={StaticResource Vis}}">
         <StackPanel Spacing="14" MaxWidth="440">
           <TextBlock Text="Fig. 00" Style="{StaticResource SectionLabel}" HorizontalAlignment="Center" />
           <TextBlock Text="Draw a structure and it answers." Style="{StaticResource DisplayText}" HorizontalAlignment="Center" />
@@ -79,22 +126,24 @@
         </Border>
 
         <!-- Floating selection bar, positioned by code above the selection -->
+
+        <!-- xaml-lint: allow card - popover chrome; no Toolkit by README decision -->
         <Border x:Name="FloatingBar" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed"
                 Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineStrongBrush}" BorderThickness="1" CornerRadius="6" Padding="10,3,3,3">
           <StackPanel Orientation="Horizontal" Spacing="2">
-            <TextBlock x:Name="FloatLabel" Style="{StaticResource MonoCaption}" FontFamily="{StaticResource MonoFontMedium}" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <TextBlock Text="{Binding Inspector.SelectionLabel}" Style="{StaticResource MonoCaption}" FontFamily="{StaticResource MonoFontMedium}" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
             <Rectangle Width="1" Height="16" Fill="{StaticResource HairlineBrush}" Margin="0,0,4,0" />
-            <Button Style="{StaticResource IconButton}" Command="{Binding CycleSupport}" ToolTipService.ToolTip="Cycle support" x:Name="FloatSupport" AutomationProperties.Name="Cycle support">
-              <c:Icon Kind="support" Foreground="{StaticResource InkBrush}" />
+            <Button Style="{StaticResource IconButton}" Command="{Binding CycleSupport}" ToolTipService.ToolTip="Cycle support" Visibility="{Binding Inspector.SelectionHasNodes, Converter={StaticResource Vis}}" AutomationProperties.Name="Cycle support">
+              <c:Icon Kind="support" Foreground="{StaticResource AccentBrush}" />
             </Button>
-            <Button Style="{StaticResource IconButton}" Command="{Binding AddLoad}" ToolTipService.ToolTip="Add 10 kN load" x:Name="FloatLoad" AutomationProperties.Name="Add load">
-              <c:Icon Kind="load" Foreground="{StaticResource InkBrush}" />
+            <Button Style="{StaticResource IconButton}" Command="{Binding AddLoad}" ToolTipService.ToolTip="Add 10 kN load" Visibility="{Binding Inspector.SelectionHasNodes, Converter={StaticResource Vis}}" AutomationProperties.Name="Add load">
+              <c:Icon Kind="load" Foreground="{StaticResource AccentBrush}" />
             </Button>
-            <Button Style="{StaticResource IconButton}" Command="{Binding SplitMember}" ToolTipService.ToolTip="Split member" x:Name="FloatSplit" AutomationProperties.Name="Split member">
-              <c:Icon Kind="node" Foreground="{StaticResource InkBrush}" />
+            <Button Style="{StaticResource IconButton}" Command="{Binding SplitMember}" ToolTipService.ToolTip="Split member" Visibility="{Binding Inspector.IsMember, Converter={StaticResource Vis}}" AutomationProperties.Name="Split member">
+              <c:Icon Kind="node" Foreground="{StaticResource AccentBrush}" />
             </Button>
             <Button Style="{StaticResource IconButton}" Command="{Binding DuplicateSelection}" ToolTipService.ToolTip="Duplicate   Ctrl+D" AutomationProperties.Name="Duplicate">
-              <c:Icon Kind="duplicate" Foreground="{StaticResource InkBrush}" />
+              <c:Icon Kind="duplicate" Foreground="{StaticResource AccentBrush}" />
             </Button>
             <Button Style="{StaticResource IconButton}" Command="{Binding DeleteSelection}" ToolTipService.ToolTip="Delete   Del" AutomationProperties.Name="Delete">
               <c:Icon Kind="delete" Foreground="{StaticResource DangerBrush}" />
@@ -103,12 +152,16 @@
         </Border>
 
         <!-- Section drag ghost -->
+
+        <!-- xaml-lint: allow card - drag ghost chip; no Toolkit by README decision -->
         <Border x:Name="DragGhost" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" IsHitTestVisible="False"
                 Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource AccentBrush}" BorderThickness="1" CornerRadius="4" Padding="6,3">
           <TextBlock x:Name="DragGhostText" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkBrush}" />
         </Border>
 
         <!-- Toast -->
+
+        <!-- xaml-lint: allow card - transient toast; no Toolkit by README decision -->
         <Border x:Name="Toast" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,64" Padding="14,8" CornerRadius="4" Opacity="0" IsHitTestVisible="False"
                 Background="{StaticResource InkBrush}">
           <Border.RenderTransform>
@@ -118,11 +171,11 @@
         </Border>
       </Grid>
 
-      <!-- Inspector column -->
-      <Border Grid.Column="2" x:Name="InspectorHost" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="1,0,0,0">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
+      <!-- Inspector column: the shell yields to width (VisualState above), the host follows the user's toggle (Ctrl+\). -->
+      <Border Grid.Column="2" x:Name="InspectorShell">
+        <Border x:Name="InspectorHost" Width="{StaticResource InspectorWidth}" c:Motion.Reveal="True" Visibility="{Binding InspectorVisible, Converter={StaticResource Vis}}">
           <v:InspectorPanel x:Name="Inspector" />
-        </ScrollViewer>
+        </Border>
       </Border>
     </Grid>
 

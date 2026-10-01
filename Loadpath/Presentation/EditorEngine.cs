@@ -261,7 +261,10 @@ public sealed class EditorEngine
             c.Add(new AppCommand($"section.{section.Id}", $"Set section: {section.Name}", "Sections", null, () => SetSectionOnSelection(section), () => Selection.MemberCount > 0));
         }
 
-        c.Add(new AppCommand("view.fit", "Fit structure", "View", "F|Ctrl+0", RequestFit, icon: "fit"));
+        c.Add(new AppCommand("view.fit", "Fit structure", "View", "Ctrl+0", RequestFit, icon: "fit"));
+        c.Add(new AppCommand("view.noise", "Reduce noise", "View", "F", () => Options.ReduceNoise = !Options.ReduceNoise));
+        c.Add(new AppCommand("view.exaggerateMore", "Exaggerate deflection more", "View", null, () => Options.Exaggeration += 0.1));
+        c.Add(new AppCommand("view.exaggerateLess", "Exaggerate deflection less", "View", null, () => Options.Exaggeration -= 0.1));
         c.Add(new AppCommand("view.zoom100", "Zoom to 100%", "View", "Ctrl+1", () => Interaction.ZoomTo(Core.Viewport.Viewport.BaseScale)));
         c.Add(new AppCommand("view.zoomIn", "Zoom in", "View", "Ctrl+=", () => Interaction.ZoomStep(1)));
         c.Add(new AppCommand("view.zoomOut", "Zoom out", "View", "Ctrl+-", () => Interaction.ZoomStep(-1)));

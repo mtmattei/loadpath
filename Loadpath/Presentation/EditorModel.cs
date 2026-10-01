@@ -3,7 +3,6 @@ using Uno.Extensions.Reactive.Commands;
 using Uno.Extensions.Reactive.Config;
 using Loadpath.Core.Analysis;
 using Loadpath.Core.Editing;
-using Loadpath.Workspace;
 
 namespace Loadpath.Presentation;
 
@@ -65,14 +64,36 @@ public partial record EditorModel
 
     public IState<bool> IsForces => State.Value(this, () => _engine.Options.DisplayMode == DisplayMode.Forces);
     public IState<bool> IsUtilization => State.Value(this, () => _engine.Options.DisplayMode == DisplayMode.Utilization);
-    public IState<bool> ShowDeflection => State.Value(this, () => _engine.Options.ShowDeflection).ForEach(async (v, ct) => Push(o => o.ShowDeflection = v));
-    public IState<double> Exaggeration => State.Value(this, () => _engine.Options.Exaggeration).ForEach(async (v, ct) => Push(o => o.Exaggeration = v));
-    public IFeed<string> ExaggerationText => Exaggeration.Select(v => $"×{v:0.0}");
-    public IState<bool> ShowLabels => State.Value(this, () => _engine.Options.ShowLabels).ForEach(async (v, ct) => Push(o => o.ShowLabels = v));
-    public IState<bool> ShowReactions => State.Value(this, () => _engine.Options.ShowReactions).ForEach(async (v, ct) => Push(o => o.ShowReactions = v));
+    public IState<string> ExaggerationText => State.Value(this, () => ExaggerationLabel());
     public IState<bool> SnapEnabled => State.Value(this, () => _engine.Options.SnapEnabled);
     public IState<string> SnapText => State.Value(this, () => SnapLabel());
     public IState<bool> InspectorVisible => State.Value(this, () => _engine.Options.InspectorVisible);
+
+    // ---- reduce noise: the toggle, which layers stay, and what the panels show ----
+
+    public IState<bool> ReduceNoise => State.Value(this, () => _engine.Options.ReduceNoise).ForEach(async (v, ct) => Push(o => o.ReduceNoise = v));
+    public IState<bool> KeepGrid => State.Value(this, () => (_engine.Options.Keep & NoiseLayer.Grid) != 0).ForEach(async (v, ct) => Push(o => o.SetKeep(NoiseLayer.Grid, v)));
+    public IState<bool> KeepDimensions => State.Value(this, () => (_engine.Options.Keep & NoiseLayer.Dimensions) != 0).ForEach(async (v, ct) => Push(o => o.SetKeep(NoiseLayer.Dimensions, v)));
+    public IState<bool> KeepSupports => State.Value(this, () => (_engine.Options.Keep & NoiseLayer.Supports) != 0).ForEach(async (v, ct) => Push(o => o.SetKeep(NoiseLayer.Supports, v)));
+    public IState<bool> KeepLoads => State.Value(this, () => (_engine.Options.Keep & NoiseLayer.Loads) != 0).ForEach(async (v, ct) => Push(o => o.SetKeep(NoiseLayer.Loads, v)));
+    public IState<bool> KeepOverCapacity => State.Value(this, () => (_engine.Options.Keep & NoiseLayer.OverCapacity) != 0).ForEach(async (v, ct) => Push(o => o.SetKeep(NoiseLayer.OverCapacity, v)));
+    public IState<bool> KeepMemberForces => State.Value(this, () => (_engine.Options.Keep & NoiseLayer.MemberForces) != 0).ForEach(async (v, ct) => Push(o => o.SetKeep(NoiseLayer.MemberForces, v)));
+    public IState<bool> KeepReactions => State.Value(this, () => (_engine.Options.Keep & NoiseLayer.Reactions) != 0).ForEach(async (v, ct) => Push(o => o.SetKeep(NoiseLayer.Reactions, v)));
+    public IState<bool> KeepDeflection => State.Value(this, () => (_engine.Options.Keep & NoiseLayer.Deflection) != 0).ForEach(async (v, ct) => Push(o => o.SetKeep(NoiseLayer.Deflection, v)));
+    public IState<bool> KeepPartNames => State.Value(this, () => (_engine.Options.Keep & NoiseLayer.PartNames) != 0).ForEach(async (v, ct) => Push(o => o.SetKeep(NoiseLayer.PartNames, v)));
+    public IState<bool> KeepLegend => State.Value(this, () => (_engine.Options.Keep & NoiseLayer.Legend) != 0).ForEach(async (v, ct) => Push(o => o.SetKeep(NoiseLayer.Legend, v)));
+    public IState<bool> KeepStructureList => State.Value(this, () => (_engine.Options.Keep & NoiseLayer.StructureList) != 0).ForEach(async (v, ct) => Push(o => o.SetKeep(NoiseLayer.StructureList, v)));
+    public IState<bool> KeepResultDetails => State.Value(this, () => (_engine.Options.Keep & NoiseLayer.ResultDetails) != 0).ForEach(async (v, ct) => Push(o => o.SetKeep(NoiseLayer.ResultDetails, v)));
+    public IState<string> NoiseSummary => State.Value(this, () => NoiseSummaryText());
+    public IState<string> NoiseStatus => State.Value(this, () => NoiseStatusText());
+    public IState<bool> ShowStructureList => State.Value(this, () => _engine.Options.IsVisible(NoiseLayer.StructureList));
+    public IState<bool> ShowResultDetails => State.Value(this, () => _engine.Options.IsVisible(NoiseLayer.ResultDetails));
+    public IState<LayerCounts> Counts => State.Value(this, () => LayerCounts.Empty);
+
+    // One declaration per layer: MVUX keys each state by its declaring member, so a shared factory would merge them.
+
+    [Command] public void ShowAll() => Ui(() => _engine.Options.ReduceNoise = false);
+    [Command] public void ResetNoiseLayers() => Ui(() => _engine.Options.Keep = ViewOptions.DefaultKeep);
 
     private void Push(Action<ViewOptions> apply)
     {
@@ -80,7 +101,21 @@ public partial record EditorModel
         Ui(() => apply(_engine.Options));
     }
 
-    private string SnapLabel() => _engine.Options.SnapEnabled ? $"{_engine.Options.GridStep:0.##} m" : "off";
+    private string SnapLabel() => _engine.Options.SnapEnabled ? $"{_engine.Options.GridStep:0.##} M" : "OFF";
+    private string ExaggerationLabel() => $"×{_engine.Options.Exaggeration:0.0}";
+
+    private string NoiseSummaryText()
+    {
+        var o = _engine.Options;
+        var hidden = ViewOptions.LayerCount - System.Numerics.BitOperations.PopCount((uint)o.Keep);
+        return $"{(o.ReduceNoise ? "ON" : "OFF")} · {hidden} {(hidden == 1 ? "LAYER" : "LAYERS")} HIDDEN";
+    }
+
+    private string NoiseStatusText()
+    {
+        var n = _engine.Options.HiddenLayerCount;
+        return $"NOISE REDUCED · {n} {(n == 1 ? "LAYER" : "LAYERS")} HIDDEN";
+    }
 
     private async ValueTask PullOptionsAsync()
     {
@@ -90,13 +125,27 @@ public partial record EditorModel
             var o = _engine.Options;
             await IsForces.SetAsync(o.DisplayMode == DisplayMode.Forces);
             await IsUtilization.SetAsync(o.DisplayMode == DisplayMode.Utilization);
-            await ShowDeflection.SetAsync(o.ShowDeflection);
-            await Exaggeration.SetAsync(o.Exaggeration);
-            await ShowLabels.SetAsync(o.ShowLabels);
-            await ShowReactions.SetAsync(o.ShowReactions);
+            await ExaggerationText.SetAsync(ExaggerationLabel());
             await SnapEnabled.SetAsync(o.SnapEnabled);
             await SnapText.SetAsync(SnapLabel());
             await InspectorVisible.SetAsync(o.InspectorVisible);
+            await ReduceNoise.SetAsync(o.ReduceNoise);
+            await KeepGrid.SetAsync((o.Keep & NoiseLayer.Grid) != 0);
+            await KeepDimensions.SetAsync((o.Keep & NoiseLayer.Dimensions) != 0);
+            await KeepSupports.SetAsync((o.Keep & NoiseLayer.Supports) != 0);
+            await KeepLoads.SetAsync((o.Keep & NoiseLayer.Loads) != 0);
+            await KeepOverCapacity.SetAsync((o.Keep & NoiseLayer.OverCapacity) != 0);
+            await KeepMemberForces.SetAsync((o.Keep & NoiseLayer.MemberForces) != 0);
+            await KeepReactions.SetAsync((o.Keep & NoiseLayer.Reactions) != 0);
+            await KeepDeflection.SetAsync((o.Keep & NoiseLayer.Deflection) != 0);
+            await KeepPartNames.SetAsync((o.Keep & NoiseLayer.PartNames) != 0);
+            await KeepLegend.SetAsync((o.Keep & NoiseLayer.Legend) != 0);
+            await KeepStructureList.SetAsync((o.Keep & NoiseLayer.StructureList) != 0);
+            await KeepResultDetails.SetAsync((o.Keep & NoiseLayer.ResultDetails) != 0);
+            await NoiseSummary.SetAsync(NoiseSummaryText());
+            await NoiseStatus.SetAsync(NoiseStatusText());
+            await ShowStructureList.SetAsync(o.IsVisible(NoiseLayer.StructureList));
+            await ShowResultDetails.SetAsync(o.IsVisible(NoiseLayer.ResultDetails));
         }
         finally { _syncingOptions = false; }
     }
@@ -299,7 +348,7 @@ public partial record EditorModel
     {
         var items = _paletteMatches.Select((c, i) => new PaletteItem(
             c.Id, c.Title, c.Category, c.ShortcutDisplay.Replace("|", " · "), c.Icon ?? "chevron-right", c.Icon is not null,
-            !c.CanExecute, i == _paletteHighlight, i == _paletteHighlight ? "SurfaceHoverBrush" : "TransparentBrush")).ToImmutableList();
+            !c.CanExecute, i == _paletteHighlight ?"SurfaceHoverBrush" : "TransparentBrush")).ToImmutableList();
         await PaletteItems.UpdateAsync(_ => items, ct);
     }
 
@@ -355,10 +404,10 @@ public partial record EditorModel
         }
         var d = a.DetachedNodeIds.Count;
         var over = a.IsSolved ? a.Members.Values.Count(m => m.IsOverstressed) : 0;
-        var pillText = over > 0 ? (over == 1 ? "1 member over capacity" : $"{over} members over capacity")
-            : a.IsSolved ? "Within capacity" : $"{text} · {detail.ToLowerInvariant()}";
+        var pillText = over > 0 ? $"{over} OVER CAPACITY"
+            : a.IsSolved ? "WITHIN CAPACITY" : $"{text} · {detail}".ToUpperInvariant();
         var status = new EditorStatus(
-            _engine.Document.Name, _engine.IsDirty, text, detail, tone, mechanism, mechanismText,
+            _engine.Document.Name, _engine.IsDirty, tone, mechanism, mechanismText,
             a.HasDetached && !mechanism,
             d == 1 ? "1 node is not connected to a support and carries nothing." : $"{d} nodes are not connected to a support and carry nothing.",
             a.IsSolved ? $"{a.MaxUtilization * 100:0}%" : "—", UtilTone(a.MaxUtilization),
@@ -366,8 +415,18 @@ public partial record EditorModel
             h.UndoLabel is { } u ? $"Undo {u.ToLowerInvariant()}" : "Nothing to undo",
             h.RedoLabel is { } r ? $"Redo {r.ToLowerInvariant()}" : "Nothing to redo",
             pillText, over > 0 || mechanism,
-            a.IsSolved ? $"Solved in {a.SolveMilliseconds:0.0} ms" : "Not solved", over > 0);
+            a.IsSolved ? $"{a.SolveMilliseconds:0.0} MS" : "—", over > 0);
         await Status.UpdateAsync(_ => status);
+
+        var doc = _engine.Document;
+        var supports = doc.Nodes.Count(n => n.HasSupport);
+        await Counts.UpdateAsync(_ => new LayerCounts(
+            $"{_engine.Options.GridStep:0.##} M",
+            supports.ToString(),
+            doc.Nodes.Count(n => n.HasLoad).ToString(),
+            over.ToString(),
+            (a.IsSolved ? doc.Members.Count - over : 0).ToString(),
+            (a.IsSolved ? supports : 0).ToString()));
     }
 
     private static string UtilTone(double util) => util >= 1 ? "DangerBrush" : util >= 0.75 ? "WarnBrush" : "InkBrush";
@@ -385,9 +444,9 @@ public partial record EditorModel
 
     private static string SupportWord(SupportKind k) => k switch
     {
-        SupportKind.Pin => "Pin",
-        SupportKind.RollerY => "Roller",
-        SupportKind.RollerX => "Roller y",
+        SupportKind.Pin => "PIN",
+        SupportKind.RollerY => "ROLLER",
+        SupportKind.RollerX => "ROLLER Y",
         _ => "",
     };
     private static string Fmt(double v) => (Math.Round(v, 1) >= 0 ? "+" : "−") + $"{Math.Abs(v),6:0.0}";
@@ -460,15 +519,13 @@ public partial record EditorModel
                     DispMagText = hasDisp ? $"{disp.Length:0.00} mm" : "—",
                     DispDotX = dotX, DispDotY = dotY,
                     ConnectedCountText = members.Count.ToString(),
-                    IsSummary = false, IsNode = true,
+                    IsSummary = false, IsNode = true, SelectionHasNodes = true, SelectionLabel = $"N{node.Id}",
                     Title = $"Node {node.Id}",
                     Subtitle = node.Support.Label() + (node.HasLoad ? $" · {node.Load.Length:0.#} kN" : ""),
                     IsPin = node.Support == SupportKind.Pin, IsRoller = node.Support == SupportKind.RollerY,
                     IsRollerX = node.Support == SupportKind.RollerX, IsFree = node.Support == SupportKind.None,
-                    ConnectedText = members.Count == 0 ? "No members" : string.Join(", ", members.Select(m => $"M{m.Id}")),
                     HasReaction = a.IsSolved && node.HasSupport && r is not null,
                     ReactionText = a.IsSolved && node.HasSupport && r is { } rr ? $"{Fmt(rr.Reaction.X)}  {Fmt(rr.Reaction.Y)} kN" : "",
-                    DisplacementText = a.IsSolved && r is { } dr ? $"{dr.Displacement.X * 1000:+0.00;−0.00}  {dr.Displacement.Y * 1000:+0.00;−0.00} mm" : "—",
                 };
                 var connected = members.Select(m =>
                 {
@@ -492,7 +549,7 @@ public partial record EditorModel
                 var mr = res ?? default;
                 c = c with
                 {
-                    IsSummary = false, IsMember = true,
+                    IsSummary = false, IsMember = true, SelectionLabel = $"M{member.Id}",
                     Title = $"Member {member.Id}",
                     Subtitle = member.Section.Name,
                     EndpointsText = $"N{member.StartNodeId} → N{member.EndNodeId}",
@@ -515,7 +572,7 @@ public partial record EditorModel
             {
                 c = c with
                 {
-                    IsSummary = false, IsMixed = true,
+                    IsSummary = false, IsMixed = true, SelectionHasNodes = sel.NodeCount > 0, SelectionLabel = $"{sel.Count} sel",
                     Title = $"{sel.Count} selected",
                     Subtitle = $"{sel.NodeCount} nodes · {sel.MemberCount} members",
                     MixedHasNodes = sel.NodeCount > 0,
@@ -538,8 +595,8 @@ public partial record EditorModel
             var selected = sel.Contains(n.Ref);
             // Round, then add +0.0: -0.0 + 0.0 is +0.0, so a node at x = -1e-12 reads "0" instead of "-0".
             return new OutlineItem($"n{n.Id}", $"N{n.Id}", $"{Math.Round(n.Position.X, 2) + 0.0:0.##}, {Math.Round(n.Position.Y, 2) + 0.0:0.##}",
-                n.HasLoad ? $"{Arrow(n.Load)} {n.Load.Length:0.#} kN" : "",
-                "InkBrush", selected, selected ? "SelectionBrush" : "TransparentBrush", n.HasSupport, SupportWord(n.Support), false, "");
+                n.HasLoad ? $"{Arrow(n.Load)} {n.Load.Length:0.#} KN" : "",
+                "InkBrush", selected ? "SelectionBrush" : "TransparentBrush", n.HasSupport, SupportWord(n.Support), false, "");
         }).ToImmutableList();
         var members = doc.Members.Select(m =>
         {
@@ -549,8 +606,8 @@ public partial record EditorModel
             var res = r ?? default;
             return new OutlineItem($"m{m.Id}", $"M{m.Id}", $"N{m.StartNodeId}-N{m.EndNodeId}",
                 solved ? (Math.Abs(res.AxialForceKn) < 0.05 ? "0.0" : SignedKn(res.AxialForceKn)) : "",
-                solved ? ForceTone(res.IsTension, res.IsCompression, res.IsOverstressed) : "InkTertiaryBrush",
-                selected, selected ? "SelectionBrush" : "TransparentBrush", false, "",
+                solved ? (res.IsOverstressed ? "DangerBrush" : "InkBrush") : "InkTertiaryBrush",
+                selected ? "SelectionBrush" : "TransparentBrush", false, "",
                 solved && res.IsOverstressed, solved ? $"{res.Utilization * 100:0}%" : "");
         }).ToImmutableList();
         await OutlineNodes.UpdateAsync(_ => nodes);

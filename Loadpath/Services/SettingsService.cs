@@ -11,14 +11,16 @@ public sealed class SettingsService
     public sealed class Model
     {
         public string DisplayMode { get; set; } = "Forces";
-        public bool ShowDeflection { get; set; }
+        public bool ShowDeflection { get; set; } = true;
         public double Exaggeration { get; set; } = 1;
         public bool ShowLabels { get; set; } = true;
-        public bool ShowReactions { get; set; }
+        public bool ShowReactions { get; set; } = true;
         public bool ShowGrid { get; set; } = true;
         public bool SnapEnabled { get; set; } = true;
         public double GridStep { get; set; } = 0.5;
         public bool InspectorVisible { get; set; } = true;
+        public bool ReduceNoise { get; set; }
+        public int NoiseKeep { get; set; } = (int)ViewOptions.DefaultKeep;
         public string? LastFilePath { get; set; }
         public List<string> RecentFiles { get; set; } = new();
     }
@@ -64,6 +66,8 @@ public sealed class SettingsService
         o.SnapEnabled = m.SnapEnabled;
         o.GridStep = m.GridStep > 0 ? m.GridStep : 0.5;
         o.InspectorVisible = m.InspectorVisible;
+        o.ReduceNoise = m.ReduceNoise;
+        o.Keep = (NoiseLayer)m.NoiseKeep;
     }
 
     public void Capture(ViewOptions o, Model m)
@@ -77,5 +81,7 @@ public sealed class SettingsService
         m.SnapEnabled = o.SnapEnabled;
         m.GridStep = o.GridStep;
         m.InspectorVisible = o.InspectorVisible;
+        m.ReduceNoise = o.ReduceNoise;
+        m.NoiseKeep = (int)o.Keep;
     }
 }

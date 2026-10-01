@@ -1,5 +1,4 @@
 using Loadpath.Presentation;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -43,29 +42,40 @@ public sealed partial class CommandPalette : UserControl
         sb.Begin();
     }
 
-    private void OnQueryKeyDown(object sender, KeyRoutedEventArgs e)
+    // Handled is set before the first await: routing reads it synchronously.
+
+    // xaml-lint: allow codebehind - arrow/Enter/Esc routing inside the search box
+    private async void OnQueryKeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (Model is null) return;
         switch (e.Key)
         {
-            case VirtualKey.Down: _ = Model.MovePaletteHighlight(1, default); e.Handled = true; break;
-            case VirtualKey.Up: _ = Model.MovePaletteHighlight(-1, default); e.Handled = true; break;
-            case VirtualKey.Enter: _ = Model.RunPalette(null, default); e.Handled = true; break;
-            case VirtualKey.Escape: _ = Model.ClosePalette(default); e.Handled = true; break;
+            case VirtualKey.Down: e.Handled = true; await Model.MovePaletteHighlight(1, default); break;
+            case VirtualKey.Up: e.Handled = true; await Model.MovePaletteHighlight(-1, default); break;
+            case VirtualKey.Enter: e.Handled = true; await Model.RunPalette(null, default); break;
+            case VirtualKey.Escape: e.Handled = true; await Model.ClosePalette(default); break;
         }
     }
 
-    private void OnItemPressed(object sender, PointerRoutedEventArgs e)
+    // xaml-lint: allow codebehind - rows are not Buttons so arrow keys keep focus in the query; a press runs the row
+    private async void OnItemPressed(object sender, PointerRoutedEventArgs e)
     {
-        if (sender is FrameworkElement { Tag: string id }) _ = Model?.RunPalette(id, default);
         e.Handled = true;
+        if (sender is FrameworkElement { Tag: string id } && Model is { } model) await model.RunPalette(id, default);
     }
 
-    private void OnItemEntered(object sender, PointerRoutedEventArgs e)
+    // xaml-lint: allow codebehind - hover moves the keyboard highlight
+    private async void OnItemEntered(object sender, PointerRoutedEventArgs e)
     {
-        if (sender is FrameworkElement { Tag: string id }) _ = Model?.HighlightPaletteItem(id, default);
+        if (sender is FrameworkElement { Tag: string id } && Model is { } model) await model.HighlightPaletteItem(id, default);
     }
 
-    private void OnScrimPressed(object sender, PointerRoutedEventArgs e) => _ = Model?.ClosePalette(default);
+    // xaml-lint: allow codebehind - a press outside the panel closes it
+    private async void OnScrimPressed(object sender, PointerRoutedEventArgs e)
+    {
+        if (Model is { } model) await model.ClosePalette(default);
+    }
+
+    // xaml-lint: allow codebehind - a press inside the panel must not reach the scrim
     private void OnPanelPressed(object sender, PointerRoutedEventArgs e) => e.Handled = true;
 }

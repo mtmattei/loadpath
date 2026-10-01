@@ -1,4 +1,3 @@
-using Loadpath.Core.Geometry;
 using Loadpath.Presentation;
 using Loadpath.Workspace.Tools;
 using Windows.System;
@@ -141,7 +140,7 @@ public sealed class WorkspaceInteraction : IToolContext
 
     public void PointerMoved(PointerState p)
     {
-        CursorWorldText = $"x {p.World.X,7:0.00}   y {p.World.Y,7:0.00}";
+        CursorWorldText = $"X {p.World.X,6:0.00}  Y {p.World.Y,6:0.00}";
         if (_transientPan is not null) { _transientPan.OnMoved(this, p); return; }
         if (!_active.IsBusy)
         {

@@ -14,8 +14,8 @@
 
     <!--
       SkiaRenderer: the workspace is an SKCanvasElement.
-      Mvvm: CommunityToolkit.Mvvm for observable presentation state.
-      No Material, Toolkit, or Extensions: the visual system is custom and the app has three services.
+      MVUX: the presentation model (Uno.Extensions.Reactive).
+      No Material, Toolkit, or Extensions hosting: the visual system is custom and the app has three services.
     -->
     <UnoFeatures>
       SkiaRenderer;
