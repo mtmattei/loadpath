@@ -25,7 +25,7 @@
           <ItemsControl ItemsSource="{Binding PaletteItems}" Padding="4">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Border Height="28" Padding="8,0" CornerRadius="4" Background="{Binding RowBrushKey, Converter={StaticResource Brush}}" Tag="{Binding Id}" PointerPressed="OnItemPressed" PointerEntered="OnItemEntered">
+                <Border Height="26" Padding="8,0" CornerRadius="4" Background="{Binding RowBrushKey, Converter={StaticResource Brush}}" Tag="{Binding Id}" PointerPressed="OnItemPressed" PointerEntered="OnItemEntered">
                   <Grid ColumnSpacing="10">
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="16" />

@@ -6,7 +6,7 @@
   <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="12,0">
     <Grid ColumnSpacing="16">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="170" />
+        <ColumnDefinition x:Name="CursorColumn" Width="170" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="*" />
         <ColumnDefinition Width="Auto" />
@@ -14,9 +14,9 @@
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
 
-      <TextBlock Text="{Binding CursorText}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
+      <TextBlock x:Name="Cursor" Text="{Binding CursorText}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
 
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+      <StackPanel x:Name="SnapZoom" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
         <TextBlock Text="snap" Style="{StaticResource CaptionText}" VerticalAlignment="Center" />
         <TextBlock Text="{Binding SnapText}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"
                    Opacity="{Binding SnapEnabled, Converter={StaticResource Dim}, ConverterParameter=invert}" />
@@ -33,6 +33,8 @@
         <ToggleButton Style="{StaticResource SegmentToggle}" Content="Deflection" IsChecked="{Binding ShowDeflection, Mode=TwoWay, Converter={StaticResource Checked}}" ToolTipService.ToolTip="Show deflected shape   3" />
         <Slider Style="{StaticResource CompactSlider}" Width="64" Minimum="0.2" Maximum="3" StepFrequency="0.1" Value="{Binding Exaggeration, Mode=TwoWay}"
                 Visibility="{Binding ShowDeflection, Converter={StaticResource Vis}}" ToolTipService.ToolTip="Deflection exaggeration" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding ExaggerationText}" Style="{StaticResource MonoCaption}" MinWidth="30" Margin="2,0,4,0" VerticalAlignment="Center"
+                   Visibility="{Binding ShowDeflection, Converter={StaticResource Vis}}" />
         <ToggleButton Style="{StaticResource SegmentToggle}" Content="Labels" IsChecked="{Binding ShowLabels, Mode=TwoWay, Converter={StaticResource Checked}}" ToolTipService.ToolTip="Show force labels   4" />
         <ToggleButton Style="{StaticResource SegmentToggle}" Content="Reactions" IsChecked="{Binding ShowReactions, Mode=TwoWay, Converter={StaticResource Checked}}" ToolTipService.ToolTip="Show support reactions   5" />
       </StackPanel>

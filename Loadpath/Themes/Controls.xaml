@@ -147,9 +147,9 @@
   </Style>
 
   <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
-    <Setter Property="Width" Value="28" />
-    <Setter Property="Height" Value="28" />
-    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Width" Value="26" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="MinHeight" Value="26" />
     <Setter Property="Padding" Value="0" />
     <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
   </Style>

@@ -67,6 +67,7 @@ public partial record EditorModel
     public IState<bool> IsUtilization => State.Value(this, () => _engine.Options.DisplayMode == DisplayMode.Utilization);
     public IState<bool> ShowDeflection => State.Value(this, () => _engine.Options.ShowDeflection).ForEach(async (v, ct) => Push(o => o.ShowDeflection = v));
     public IState<double> Exaggeration => State.Value(this, () => _engine.Options.Exaggeration).ForEach(async (v, ct) => Push(o => o.Exaggeration = v));
+    public IFeed<string> ExaggerationText => Exaggeration.Select(v => $"×{v:0.0}");
     public IState<bool> ShowLabels => State.Value(this, () => _engine.Options.ShowLabels).ForEach(async (v, ct) => Push(o => o.ShowLabels = v));
     public IState<bool> ShowReactions => State.Value(this, () => _engine.Options.ShowReactions).ForEach(async (v, ct) => Push(o => o.ShowReactions = v));
     public IState<bool> SnapEnabled => State.Value(this, () => _engine.Options.SnapEnabled);

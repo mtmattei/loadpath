@@ -126,7 +126,7 @@
 
       <TextBlock Text="SECTION" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" />
       <ComboBox ItemsSource="{Binding Sections}" SelectedIndex="{Binding SectionIndex, Mode=TwoWay}"
-                HorizontalAlignment="Stretch" MinHeight="26" Height="28" FontFamily="{StaticResource UiFont}" FontSize="12" AutomationProperties.Name="Section">
+                HorizontalAlignment="Stretch" MinHeight="26" Height="26" FontFamily="{StaticResource UiFont}" FontSize="12" AutomationProperties.Name="Section">
         <ComboBox.ItemTemplate>
           <DataTemplate>
             <TextBlock Text="{Binding Name}" FontFamily="{StaticResource UiFont}" FontSize="12" />

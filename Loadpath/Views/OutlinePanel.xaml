@@ -35,7 +35,7 @@
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
       <StackPanel Padding="0,0,0,12">
         <TextBlock Text="No elements yet" Style="{StaticResource CaptionText}" Margin="12,4" Visibility="{Binding OutlineIsEmpty, Converter={StaticResource Vis}}" />
-        <Button Style="{StaticResource QuietButton}" Command="{Binding ToggleNodes}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,0" Height="24"
+        <Button Style="{StaticResource QuietButton}" Command="{Binding ToggleNodes}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,0" Height="26"
                 Visibility="{Binding OutlineIsEmpty, Converter={StaticResource Vis}, ConverterParameter=invert}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <c:Icon Kind="chevron-down" Width="12" Height="12" Foreground="{StaticResource InkTertiaryBrush}" Visibility="{Binding NodesExpanded, Converter={StaticResource Vis}}" />
@@ -44,7 +44,7 @@
           </StackPanel>
         </Button>
         <ItemsControl ItemsSource="{Binding OutlineNodes}" ItemTemplate="{StaticResource OutlineRow}" Visibility="{Binding NodesExpanded, Converter={StaticResource Vis}}" />
-        <Button Style="{StaticResource QuietButton}" Command="{Binding ToggleMembers}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,0" Height="24"
+        <Button Style="{StaticResource QuietButton}" Command="{Binding ToggleMembers}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,0" Height="26"
                 Visibility="{Binding OutlineIsEmpty, Converter={StaticResource Vis}, ConverterParameter=invert}">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <c:Icon Kind="chevron-down" Width="12" Height="12" Foreground="{StaticResource InkTertiaryBrush}" Visibility="{Binding MembersExpanded, Converter={StaticResource Vis}}" />

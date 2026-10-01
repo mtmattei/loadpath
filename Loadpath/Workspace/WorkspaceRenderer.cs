@@ -20,6 +20,8 @@ public sealed class WorkspaceRenderer : IDisposable
     private readonly SKPathEffect _dash = SKPathEffect.CreateDash([4, 4], 0);
     private readonly SKPathEffect _ghostDash = SKPathEffect.CreateDash([6, 5], 0);
     private readonly SKPath _path = new();
+    /// <summary>Label boxes drawn this frame; load and reaction labels steer around them.</summary>
+    private readonly List<SKRect> _labelRects = new(64);
 
     public WorkspaceRenderer()
     {
@@ -45,6 +47,7 @@ public sealed class WorkspaceRenderer : IDisposable
     public void Render(SKCanvas canvas, RenderSnapshot s)
     {
         canvas.Clear(SkiaPalette.Canvas);
+        _labelRects.Clear();
         if (s.ShowGrid) DrawGrid(canvas, s);
         if (s.ShowDeflection && s.Status == AnalysisStatus.Solved) DrawDeflectedGhost(canvas, s);
         DrawMembers(canvas, s);
@@ -170,6 +173,7 @@ public sealed class WorkspaceRenderer : IDisposable
             var width = _monoSmall.MeasureText(text);
             var cx = mid.X + nx * off; var cy = mid.Y + ny * off;
             var rect = new SKRect(cx - width / 2 - 4, cy - 7, cx + width / 2 + 4, cy + 7);
+            _labelRects.Add(rect);
             _fill.Color = SkiaPalette.Canvas.WithAlpha(0.82);
             canvas.DrawRoundRect(rect, 3, 3, _fill);
             _text.Color = m.Dimmed ? SkiaPalette.InkTertiary : (m.Selected ? SkiaPalette.Ink : SkiaPalette.InkSecondary);
@@ -301,16 +305,42 @@ public sealed class WorkspaceRenderer : IDisposable
         var len = MathF.Sqrt(d.X * d.X + d.Y * d.Y);
         if (len < 1) return;
         var ux = d.X / len; var uy = d.Y / len;
+        var px = -uy; var py = ux; // perpendicular, flipped to point away from the structure
+        if (px * (center.X - tail.X) + py * (center.Y - tail.Y) > 0) { px = -px; py = -py; }
         var width = _monoSmall.MeasureText(text);
-        // Beside the shaft near the head, on the side away from the structure: clear of member labels at the midpoints.
-        var px = -uy; var py = ux;
-        if (px * (center.X - head.X) + py * (center.Y - head.Y) > 0) { px = -px; py = -py; }
-        var cx = head.X - ux * 16 + px * 8;
-        var cy = head.Y - uy * 16 + py * 8;
-        var lx = px > 0.3f ? cx : px < -0.3f ? cx - width : cx - width / 2;
-        var ly = cy + 3.5f;
+        // Candidates in order of preference: beyond the tail on the shaft axis (the widest part of the panel, or
+        // outside the structure), further out, then beside the tail on the outer side, then the inner side.
+        // The arrow has a fixed pixel length, so which spot is clear depends on zoom; take the first that
+        // misses every label drawn so far this frame.
+        Span<SKPoint> anchors = stackalloc SKPoint[4];
+        anchors[0] = new SKPoint(tail.X - ux * 9, tail.Y - uy * 9);
+        anchors[1] = new SKPoint(tail.X - ux * 23, tail.Y - uy * 23);
+        anchors[2] = new SKPoint(tail.X + px * 8, tail.Y + py * 8);
+        anchors[3] = new SKPoint(tail.X - px * 8, tail.Y - py * 8);
+        var chosen = Box(anchors[0], ux, uy, width);
+        for (var i = 0; i < anchors.Length; i++)
+        {
+            var dirX = i < 2 ? -ux : (i == 2 ? px : -px);
+            var dirY = i < 2 ? -uy : (i == 2 ? py : -py);
+            var box = Box(anchors[i], dirX, dirY, width);
+            var clear = true;
+            foreach (var r in _labelRects) if (r.IntersectsWith(box)) { clear = false; break; }
+            if (clear) { chosen = box; break; }
+        }
+        _labelRects.Add(chosen);
+        _fill.Color = SkiaPalette.Canvas.WithAlpha(0.82);
+        canvas.DrawRoundRect(chosen, 3, 3, _fill);
         _text.Color = color.WithAlpha(0.9);
-        canvas.DrawText(text, lx, ly, _monoSmall, _text);
+        canvas.DrawText(text, chosen.Left + 4, chosen.MidY + 3.5f, _monoSmall, _text);
+
+        // Text box grown from an anchor in direction (dx, dy): centered across the direction, flush along it.
+        static SKRect Box(SKPoint a, float dx, float dy, float width)
+        {
+            var w = width + 8; const float h = 14;
+            var left = dx > 0.3f ? a.X : dx < -0.3f ? a.X - w : a.X - w / 2;
+            var top = dy > 0.3f ? a.Y : dy < -0.3f ? a.Y - h : a.Y - h / 2;
+            return new SKRect(left, top, left + w, top + h);
+        }
     }
 
     // ---- nodes ----

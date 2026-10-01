@@ -48,7 +48,7 @@
         <StackPanel Orientation="Horizontal" Spacing="6">
           <c:Icon Kind="search" Width="14" Height="14" />
           <TextBlock Text="Commands" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
-          <TextBlock Text="⌃K" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
+          <TextBlock Text="Ctrl+K" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
         </StackPanel>
       </Button>
       <Button Grid.Column="5" Style="{StaticResource QuietButton}" Command="{Binding OpenFile}" ToolTipService.ToolTip="Open   Ctrl+O" AutomationProperties.Name="Open">
