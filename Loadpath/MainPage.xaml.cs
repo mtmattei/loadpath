@@ -133,6 +133,10 @@ public sealed partial class MainPage : Page
             _autoCollapsedInspector = false;
             Engine.Options.InspectorVisible = true;
         }
+        // The structure outline yields next, below 1240 px; the floating tool palette only on very narrow windows.
+        var showStructure = width >= 1240;
+        StructureColumn.Width = showStructure ? new GridLength(240) : new GridLength(0);
+        StructureHost.Visibility = showStructure ? Visibility.Visible : Visibility.Collapsed;
         Rail.Visibility = width < 640 ? Visibility.Collapsed : Visibility.Visible;
     }
 
@@ -342,6 +346,7 @@ public sealed partial class MainPage : Page
         FloatSupport.Visibility = sel.NodeCount > 0 ? Visibility.Visible : Visibility.Collapsed;
         FloatLoad.Visibility = sel.NodeCount > 0 ? Visibility.Visible : Visibility.Collapsed;
         FloatSplit.Visibility = sel.Single is { IsMember: true } ? Visibility.Visible : Visibility.Collapsed;
+        FloatLabel.Text = sel.Single is { } one ? (one.IsNode ? $"N{one.Id}" : $"M{one.Id}") : $"{sel.Count} sel";
         FloatingBar.Visibility = Visibility.Visible;
         FloatingBar.UpdateLayout();
         var w = FloatingBar.ActualWidth > 0 ? FloatingBar.ActualWidth : 150;
@@ -459,7 +464,7 @@ public sealed partial class MainPage : Page
     {
         if (InspectorColumn is null) return;
         var visible = Engine.Options.InspectorVisible;
-        InspectorColumn.Width = visible ? new GridLength(280) : new GridLength(0);
+        InspectorColumn.Width = visible ? new GridLength(336) : new GridLength(0);
         InspectorHost.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
     }
 

@@ -8,27 +8,33 @@
     <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
     <Setter Property="FontSize" Value="{StaticResource TextBody}" />
     <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
-    <Setter Property="LineHeight" Value="17" />
+    <Setter Property="LineHeight" Value="18" />
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
   </Style>
   <Style x:Key="SecondaryText" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
     <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
   </Style>
   <Style x:Key="CaptionText" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
-    <Setter Property="FontSize" Value="{StaticResource TextCaption}" />
-    <Setter Property="LineHeight" Value="15" />
-    <Setter Property="Foreground" Value="{StaticResource InkTertiaryBrush}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="LineHeight" Value="16" />
+    <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
   </Style>
-  <Style x:Key="SectionLabel" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
-    <Setter Property="FontFamily" Value="{StaticResource UiFontMedium}" />
+  <!-- Section label: mono, small, the "01 Position" register of the drawing sheet. -->
+  <Style x:Key="SectionLabel" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
     <Setter Property="FontSize" Value="{StaticResource TextCaption}" />
-    <Setter Property="Foreground" Value="{StaticResource InkTertiaryBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
     <Setter Property="LineHeight" Value="15" />
   </Style>
   <Style x:Key="TitleText" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
     <Setter Property="FontFamily" Value="{StaticResource UiFontSemiBold}" />
     <Setter Property="FontSize" Value="{StaticResource TextTitle}" />
     <Setter Property="LineHeight" Value="20" />
+  </Style>
+  <Style x:Key="DisplayText" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
+    <Setter Property="FontFamily" Value="{StaticResource UiFontMedium}" />
+    <Setter Property="FontSize" Value="{StaticResource TextDisplay}" />
+    <Setter Property="LineHeight" Value="28" />
   </Style>
   <Style x:Key="MediumText" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
     <Setter Property="FontFamily" Value="{StaticResource UiFontMedium}" />
@@ -37,12 +43,25 @@
     <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
     <Setter Property="FontSize" Value="{StaticResource TextValue}" />
     <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
-    <Setter Property="LineHeight" Value="17" />
+    <Setter Property="LineHeight" Value="18" />
   </Style>
   <Style x:Key="MonoCaption" TargetType="TextBlock" BasedOn="{StaticResource ValueText}">
-    <Setter Property="FontSize" Value="{StaticResource TextCaption}" />
-    <Setter Property="LineHeight" Value="15" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="LineHeight" Value="16" />
     <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
+  </Style>
+
+  <!-- ===== Pills (read-only badges) ===== -->
+  <Style x:Key="PillBorder" TargetType="Border">
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Padding" Value="7,1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style x:Key="DangerPill" TargetType="Border" BasedOn="{StaticResource PillBorder}">
+    <Setter Property="Background" Value="{StaticResource DangerSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource DangerBorderBrush}" />
   </Style>
 
   <!-- ===== Buttons ===== -->
@@ -52,8 +71,8 @@
     <Setter Property="BorderBrush" Value="Transparent" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="Padding" Value="8,0" />
-    <Setter Property="MinHeight" Value="26" />
-    <Setter Property="Height" Value="26" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Height" Value="32" />
     <Setter Property="MinWidth" Value="0" />
     <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
     <Setter Property="FontSize" Value="{StaticResource TextBody}" />
@@ -78,7 +97,7 @@
                 </VisualState>
                 <VisualState x:Name="PointerOver">
                   <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceHoverBrush}" />
+                    <Setter Target="Hover.Opacity" Value="1" />
                   </VisualState.Setters>
                   <Storyboard>
                     <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="{StaticResource DurationFast}" />
@@ -87,7 +106,7 @@
                 </VisualState>
                 <VisualState x:Name="Pressed">
                   <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceRaisedBrush}" />
+                    <Setter Target="Hover.Opacity" Value="1" />
                   </VisualState.Setters>
                   <Storyboard>
                     <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="{StaticResource PressScale}" Duration="{StaticResource DurationFast}" />
@@ -114,17 +133,18 @@
                     Background="{TemplateBinding Background}"
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}"
-                    CornerRadius="{StaticResource RadiusField}"
-                    Padding="{TemplateBinding Padding}">
-              <ContentPresenter x:Name="ContentPresenter"
-                                Content="{TemplateBinding Content}"
-                                ContentTemplate="{TemplateBinding ContentTemplate}"
-                                Foreground="{TemplateBinding Foreground}"
-                                FontFamily="{TemplateBinding FontFamily}"
-                                FontSize="{TemplateBinding FontSize}"
-                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-            </Border>
+                    CornerRadius="{StaticResource RadiusField}" />
+            <!-- Hover wash over any background: darkens light chrome and the accent fill alike. -->
+            <Border x:Name="Hover" Opacity="0" IsHitTestVisible="False" Background="{StaticResource HoverWashBrush}" CornerRadius="{StaticResource RadiusField}" />
+            <ContentPresenter x:Name="ContentPresenter"
+                              Margin="{TemplateBinding Padding}"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Foreground="{TemplateBinding Foreground}"
+                              FontFamily="{TemplateBinding FontFamily}"
+                              FontSize="{TemplateBinding FontSize}"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
             <Border x:Name="FocusRing" Opacity="0" IsHitTestVisible="False" Margin="-2"
                     BorderBrush="{StaticResource AccentBrush}" BorderThickness="1.5" CornerRadius="6" />
           </Grid>
@@ -136,30 +156,46 @@
   <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
     <Setter Property="Background" Value="{StaticResource AccentBrush}" />
     <Setter Property="Foreground" Value="{StaticResource AccentInkBrush}" />
+    <Setter Property="FontFamily" Value="{StaticResource UiFontSemiBold}" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="Height" Value="38" />
+    <Setter Property="MinHeight" Value="38" />
+  </Style>
+
+  <Style x:Key="LinkButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
     <Setter Property="FontFamily" Value="{StaticResource UiFontMedium}" />
-    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="Height" Value="38" />
+    <Setter Property="MinHeight" Value="38" />
   </Style>
 
   <Style x:Key="OutlineButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
     <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
-    <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
-    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="Padding" Value="12,0" />
+  </Style>
+
+  <Style x:Key="DangerTextButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
+    <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+    <Setter Property="FontFamily" Value="{StaticResource UiFontMedium}" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
   </Style>
 
   <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource QuietButton}">
-    <Setter Property="Width" Value="26" />
-    <Setter Property="Height" Value="26" />
-    <Setter Property="MinHeight" Value="26" />
-    <Setter Property="Padding" Value="0" />
-    <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
-  </Style>
-
-  <!-- Tool rail button: 32 px, icon follows Foreground, accent bar on the left when active. -->
-  <Style TargetType="c:ToolButton">
     <Setter Property="Width" Value="32" />
     <Setter Property="Height" Value="32" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+  </Style>
+
+  <!-- Tool palette button: 36 px, icon follows Foreground, single-key label in the bottom-right corner. -->
+  <Style TargetType="c:ToolButton">
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Height" Value="40" />
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
     <Setter Property="UseSystemFocusVisuals" Value="False" />
     <Setter Property="IsTabStop" Value="True" />
     <Setter Property="Template">
@@ -179,8 +215,7 @@
                 </VisualState>
                 <VisualState x:Name="PointerOver">
                   <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceHoverBrush}" />
-                    <Setter Target="Glyph.Foreground" Value="{StaticResource InkBrush}" />
+                    <Setter Target="Hover.Opacity" Value="1" />
                   </VisualState.Setters>
                   <Storyboard>
                     <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="{StaticResource DurationFast}" />
@@ -189,7 +224,7 @@
                 </VisualState>
                 <VisualState x:Name="Pressed">
                   <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceRaisedBrush}" />
+                    <Setter Target="Hover.Opacity" Value="1" />
                   </VisualState.Setters>
                   <Storyboard>
                     <DoubleAnimation Storyboard.TargetName="RootScale" Storyboard.TargetProperty="ScaleX" To="{StaticResource PressScale}" Duration="{StaticResource DurationFast}" />
@@ -206,9 +241,10 @@
                 <VisualState x:Name="Inactive" />
                 <VisualState x:Name="Active">
                   <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceRaisedBrush}" />
+                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
+                    <Setter Target="Chrome.BorderBrush" Value="{StaticResource AccentBorderBrush}" />
                     <Setter Target="Glyph.Foreground" Value="{StaticResource AccentBrush}" />
-                    <Setter Target="ActiveBar.Opacity" Value="1" />
+                    <Setter Target="Key.Foreground" Value="{StaticResource AccentBrush}" />
                   </VisualState.Setters>
                 </VisualState>
               </VisualStateGroup>
@@ -222,11 +258,11 @@
                 </VisualState>
               </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
-            <Border x:Name="Chrome" Background="{TemplateBinding Background}" CornerRadius="{StaticResource RadiusField}">
-              <c:Icon x:Name="Glyph" Kind="{TemplateBinding IconKind}" Foreground="{TemplateBinding Foreground}" Width="16" Height="16" />
-            </Border>
-            <Rectangle x:Name="ActiveBar" Opacity="0" Width="2" Height="16" RadiusX="1" RadiusY="1"
-                       Fill="{StaticResource AccentBrush}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-6,0,0,0" />
+            <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="Transparent" BorderThickness="1" CornerRadius="{StaticResource RadiusField}" />
+            <Border x:Name="Hover" Opacity="0" IsHitTestVisible="False" Background="{StaticResource HoverWashBrush}" CornerRadius="{StaticResource RadiusField}" />
+            <c:Icon x:Name="Glyph" Kind="{TemplateBinding IconKind}" Foreground="{TemplateBinding Foreground}" Width="18" Height="18" Margin="-4,-4,0,0" />
+            <TextBlock x:Name="Key" Text="{TemplateBinding KeyLabel}" FontFamily="{StaticResource MonoFont}" FontSize="9" Foreground="{StaticResource InkSecondaryBrush}"
+                       HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,4,2" IsHitTestVisible="False" />
             <Border x:Name="FocusRing" Opacity="0" IsHitTestVisible="False" Margin="-2"
                     BorderBrush="{StaticResource AccentBrush}" BorderThickness="1.5" CornerRadius="6" />
           </Grid>
@@ -235,15 +271,19 @@
     </Setter>
   </Style>
 
-  <!-- Segment toggle: used for support kind and display modes. -->
+  <!--
+    Segment toggle: one cell of a joined segmented control (title display mode, support kind).
+    The group Border around the cells draws the outer frame; checked cells fill with the accent wash and show a check.
+  -->
   <Style x:Key="SegmentToggle" TargetType="ToggleButton">
     <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
-    <Setter Property="Padding" Value="8,0" />
-    <Setter Property="Height" Value="24" />
-    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="Height" Value="38" />
+    <Setter Property="MinHeight" Value="0" />
     <Setter Property="MinWidth" Value="0" />
-    <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="FontFamily" Value="{StaticResource UiFontMedium}" />
     <Setter Property="FontSize" Value="{StaticResource TextBody}" />
     <Setter Property="UseSystemFocusVisuals" Value="False" />
     <Setter Property="Template">
@@ -256,7 +296,6 @@
                 <VisualState x:Name="PointerOver">
                   <VisualState.Setters>
                     <Setter Target="Chrome.Background" Value="{StaticResource SurfaceHoverBrush}" />
-                    <Setter Target="Label.Foreground" Value="{StaticResource InkBrush}" />
                   </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="Pressed">
@@ -266,32 +305,31 @@
                 </VisualState>
                 <VisualState x:Name="Disabled">
                   <VisualState.Setters>
-                    <Setter Target="Chrome.Opacity" Value="0.4" />
+                    <Setter Target="Content.Opacity" Value="0.4" />
                   </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="Checked">
                   <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceHoverBrush}" />
-                    <Setter Target="Label.Foreground" Value="{StaticResource InkBrush}" />
-                    <Setter Target="Chrome.BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
+                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
+                    <Setter Target="Check.Visibility" Value="Visible" />
                   </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="CheckedPointerOver">
                   <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceHoverBrush}" />
-                    <Setter Target="Label.Foreground" Value="{StaticResource InkBrush}" />
-                    <Setter Target="Chrome.BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
+                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
+                    <Setter Target="Check.Visibility" Value="Visible" />
                   </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="CheckedPressed">
                   <VisualState.Setters>
-                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceHoverBrush}" />
-                    <Setter Target="Label.Foreground" Value="{StaticResource InkBrush}" />
+                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
+                    <Setter Target="Check.Visibility" Value="Visible" />
                   </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="CheckedDisabled">
                   <VisualState.Setters>
-                    <Setter Target="Chrome.Opacity" Value="0.4" />
+                    <Setter Target="Content.Opacity" Value="0.4" />
+                    <Setter Target="Check.Visibility" Value="Visible" />
                   </VisualState.Setters>
                 </VisualState>
               </VisualStateGroup>
@@ -305,14 +343,98 @@
                 </VisualState>
               </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
-            <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="Transparent" BorderThickness="1"
-                    CornerRadius="{StaticResource RadiusField}" Padding="{TemplateBinding Padding}">
-              <ContentPresenter x:Name="Label" Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
-                                FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}"
-                                HorizontalAlignment="Center" VerticalAlignment="Center" />
-            </Border>
+            <Border x:Name="Chrome" Background="{TemplateBinding Background}" />
+            <StackPanel x:Name="Content" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}">
+              <c:Icon x:Name="Check" Kind="check" Width="13" Height="13" Visibility="Collapsed" Foreground="{TemplateBinding Foreground}" />
+              <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                                FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" VerticalAlignment="Center" />
+            </StackPanel>
+            <Border x:Name="FocusRing" Opacity="0" IsHitTestVisible="False" Margin="1"
+                    BorderBrush="{StaticResource AccentBrush}" BorderThickness="1.5" CornerRadius="3" />
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- Frame around a group of SegmentToggles; cells are separated by 1 px rules placed between them. -->
+  <Style x:Key="SegmentGroup" TargetType="Border">
+    <Setter Property="BorderBrush" Value="{StaticResource InkSecondaryBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+  </Style>
+
+  <!-- Pill toggle: status-bar view options. Checked = accent wash + check; unchecked = plain label. -->
+  <Style x:Key="PillToggle" TargetType="ToggleButton" BasedOn="{StaticResource SegmentToggle}">
+    <Setter Property="Height" Value="30" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ToggleButton">
+          <Grid>
+            <VisualStateManager.VisualStateGroups>
+              <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal" />
+                <VisualState x:Name="PointerOver">
+                  <VisualState.Setters>
+                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceHoverBrush}" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Pressed">
+                  <VisualState.Setters>
+                    <Setter Target="Chrome.Background" Value="{StaticResource SurfaceHoverBrush}" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Disabled">
+                  <VisualState.Setters>
+                    <Setter Target="Content.Opacity" Value="0.4" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Checked">
+                  <VisualState.Setters>
+                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
+                    <Setter Target="Check.Visibility" Value="Visible" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="CheckedPointerOver">
+                  <VisualState.Setters>
+                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
+                    <Setter Target="Check.Visibility" Value="Visible" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="CheckedPressed">
+                  <VisualState.Setters>
+                    <Setter Target="Chrome.Background" Value="{StaticResource AccentSoftBrush}" />
+                    <Setter Target="Check.Visibility" Value="Visible" />
+                  </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="CheckedDisabled">
+                  <VisualState.Setters>
+                    <Setter Target="Content.Opacity" Value="0.4" />
+                    <Setter Target="Check.Visibility" Value="Visible" />
+                  </VisualState.Setters>
+                </VisualState>
+              </VisualStateGroup>
+              <VisualStateGroup x:Name="FocusStates">
+                <VisualState x:Name="Unfocused" />
+                <VisualState x:Name="PointerFocused" />
+                <VisualState x:Name="Focused">
+                  <VisualState.Setters>
+                    <Setter Target="FocusRing.Opacity" Value="1" />
+                  </VisualState.Setters>
+                </VisualState>
+              </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+            <Border x:Name="Chrome" Background="{TemplateBinding Background}" CornerRadius="15" />
+            <StackPanel x:Name="Content" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}">
+              <c:Icon x:Name="Check" Kind="check" Width="12" Height="12" Visibility="Collapsed" Foreground="{TemplateBinding Foreground}" />
+              <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                                FontFamily="{TemplateBinding FontFamily}" FontSize="12" VerticalAlignment="Center" />
+            </StackPanel>
             <Border x:Name="FocusRing" Opacity="0" IsHitTestVisible="False" Margin="-2"
-                    BorderBrush="{StaticResource AccentBrush}" BorderThickness="1.5" CornerRadius="6" />
+                    BorderBrush="{StaticResource AccentBrush}" BorderThickness="1.5" CornerRadius="17" />
           </Grid>
         </ControlTemplate>
       </Setter.Value>
@@ -321,15 +443,15 @@
 
   <!-- Numeric field: mono value, unit suffix supplied by the NumberField control around it. -->
   <Style x:Key="FieldTextBox" TargetType="TextBox">
-    <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
     <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
-    <Setter Property="BorderBrush" Value="{StaticResource HairlineBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource InkSecondaryBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
     <Setter Property="FontSize" Value="{StaticResource TextValue}" />
-    <Setter Property="Padding" Value="6,3,6,3" />
-    <Setter Property="MinHeight" Value="26" />
-    <Setter Property="Height" Value="26" />
+    <Setter Property="Padding" Value="10,3,10,3" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="Height" Value="40" />
     <Setter Property="MinWidth" Value="0" />
     <Setter Property="TextAlignment" Value="Right" />
     <Setter Property="SelectionHighlightColor" Value="{StaticResource AccentBrush}" />
@@ -343,7 +465,7 @@
                 <VisualState x:Name="Normal" />
                 <VisualState x:Name="PointerOver">
                   <VisualState.Setters>
-                    <Setter Target="Chrome.BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
+                    <Setter Target="Chrome.BorderBrush" Value="{StaticResource InkBrush}" />
                   </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="Focused">
@@ -359,7 +481,7 @@
               </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
             <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{StaticResource RadiusField}">
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2">
               <ScrollViewer x:Name="ContentElement"
                             HorizontalScrollMode="Disabled" VerticalScrollMode="Disabled"
                             HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"
@@ -378,14 +500,14 @@
     <Setter Property="TextAlignment" Value="Left" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="Height" Value="36" />
-    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="MinHeight" Value="40" />
     <Setter Property="Padding" Value="8,0" />
   </Style>
 
   <!-- ===== Menus, tooltips ===== -->
   <Style TargetType="MenuFlyoutPresenter">
-    <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource RadiusPopover}" />
@@ -399,8 +521,8 @@
     <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
     <Setter Property="FontSize" Value="{StaticResource TextBody}" />
     <Setter Property="Padding" Value="8,0" />
-    <Setter Property="MinHeight" Value="26" />
-    <Setter Property="Height" Value="26" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Height" Value="28" />
     <Setter Property="UseSystemFocusVisuals" Value="False" />
     <Setter Property="Template">
       <Setter.Value>
@@ -456,9 +578,9 @@
   </Style>
 
   <Style TargetType="ToolTip">
-    <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}" />
-    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
-    <Setter Property="BorderBrush" Value="{StaticResource HairlineStrongBrush}" />
+    <Setter Property="Background" Value="{StaticResource InkBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource CanvasBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource InkBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
     <Setter Property="FontSize" Value="{StaticResource TextCaption}" />
@@ -476,10 +598,10 @@
     </Setter>
   </Style>
 
-  <!-- Compact slider: 2 px track, 10 px thumb. -->
+  <!-- Compact slider: 4 px track, 14 px accent thumb. -->
   <Style x:Key="CompactSlider" TargetType="Slider">
     <Setter Property="Background" Value="{StaticResource HairlineStrongBrush}" />
-    <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
     <Setter Property="Height" Value="20" />
     <Setter Property="MinWidth" Value="60" />
     <Setter Property="IsThumbToolTipEnabled" Value="False" />
@@ -494,12 +616,12 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
               </Grid.ColumnDefinitions>
-              <Rectangle x:Name="HorizontalTrackRect" Grid.ColumnSpan="3" Height="2" Fill="{TemplateBinding Background}" VerticalAlignment="Center" RadiusX="1" RadiusY="1" />
-              <Rectangle x:Name="HorizontalDecreaseRect" Height="2" Fill="{TemplateBinding Foreground}" VerticalAlignment="Center" RadiusX="1" RadiusY="1" />
-              <Thumb x:Name="HorizontalThumb" Grid.Column="1" Width="10" Height="10" AutomationProperties.AccessibilityView="Raw">
+              <Rectangle x:Name="HorizontalTrackRect" Grid.ColumnSpan="3" Height="4" Fill="{TemplateBinding Background}" VerticalAlignment="Center" RadiusX="2" RadiusY="2" />
+              <Rectangle x:Name="HorizontalDecreaseRect" Height="4" Fill="{TemplateBinding Foreground}" VerticalAlignment="Center" RadiusX="2" RadiusY="2" />
+              <Thumb x:Name="HorizontalThumb" Grid.Column="1" Width="14" Height="14" AutomationProperties.AccessibilityView="Raw">
                 <Thumb.Template>
                   <ControlTemplate TargetType="Thumb">
-                    <Ellipse Width="10" Height="10" Fill="{StaticResource InkBrush}" />
+                    <Ellipse Width="14" Height="14" Fill="{StaticResource AccentBrush}" Stroke="{StaticResource CanvasBrush}" StrokeThickness="2" />
                   </ControlTemplate>
                 </Thumb.Template>
               </Thumb>
@@ -512,15 +634,15 @@
 
   <!-- NumberField: mono value + unit suffix. -->
   <Style TargetType="c:NumberField">
-    <Setter Property="Height" Value="26" />
+    <Setter Property="Height" Value="40" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="c:NumberField">
           <Grid>
-            <TextBox x:Name="PART_Box" Style="{StaticResource FieldTextBox}" Padding="6,3,30,3" />
-            <TextBlock Text="{TemplateBinding Unit}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkTertiaryBrush}"
-                       HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,7,0" IsHitTestVisible="False" />
+            <TextBox x:Name="PART_Box" Style="{StaticResource FieldTextBox}" Padding="10,3,32,3" />
+            <TextBlock Text="{TemplateBinding Unit}" Style="{StaticResource MonoCaption}" FontSize="11" Foreground="{StaticResource InkTertiaryBrush}"
+                       HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" IsHitTestVisible="False" />
           </Grid>
         </ControlTemplate>
       </Setter.Value>
@@ -530,13 +652,13 @@
   <!-- UtilizationBar: 4 px track, fill scaled by Value. -->
   <Style TargetType="c:UtilizationBar">
     <Setter Property="Height" Value="4" />
-    <Setter Property="Foreground" Value="{StaticResource OkBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="c:UtilizationBar">
           <Grid>
-            <Rectangle Fill="{StaticResource HairlineStrongBrush}" RadiusX="2" RadiusY="2" />
+            <Rectangle Fill="{StaticResource HairlineBrush}" RadiusX="2" RadiusY="2" />
             <Rectangle Fill="{TemplateBinding Foreground}" RadiusX="2" RadiusY="2" HorizontalAlignment="Stretch" RenderTransformOrigin="0,0.5">
               <Rectangle.RenderTransform>
                 <ScaleTransform ScaleX="{Binding Value, RelativeSource={RelativeSource TemplatedParent}}" />

@@ -21,9 +21,14 @@ public record EditorStatus(
     bool CanUndo,
     bool CanRedo,
     string UndoTooltip,
-    string RedoTooltip)
+    string RedoTooltip,
+    // title-strip status pill and status-bar solve readout
+    string PillText,
+    bool PillIsDanger,
+    string SolveText,
+    bool IsOverCapacity)
 {
-    public static readonly EditorStatus Initial = new("Untitled", false, "Empty", "Place a node to begin", "InkTertiaryBrush", false, "", false, "", "—", "OkBrush", true, false, false, "Nothing to undo", "Nothing to redo");
+    public static readonly EditorStatus Initial = new("Untitled", false, "Empty", "Place a node to begin", "InkTertiaryBrush", false, "", false, "", "—", "OkBrush", true, false, false, "Nothing to undo", "Nothing to redo", "Empty · place a node to begin", false, "Not solved", false);
 }
 
 public record InspectorContent(
@@ -34,6 +39,7 @@ public record InspectorContent(
     string MaxUtilText, double MaxUtil, string MaxUtilToneKey, string MaxDeflectionText, bool HasCritical, string CriticalText, string ReactionsText, string SummaryHint,
     // node
     bool IsPin, bool IsRoller, bool IsRollerX, bool IsFree, string ConnectedText, bool HasReaction, string ReactionText, string DisplacementText,
+    string NodeDescription, string DispXText, string DispYText, string DispMagText, double DispDotX, double DispDotY, string ConnectedCountText,
     // member
     string EndpointsText, string LengthText, string MaterialText, string AreaText, string ForceKindText, string ForceToneKey, string ForceText,
     string StressText, string UtilText, double Util, string UtilToneKey, string GovernsText, string BucklingText,
@@ -44,12 +50,16 @@ public record InspectorContent(
         true, false, false, false, "Structure", "Nothing here yet",
         "0", "0", "none", "none", "—", "—", 0, "OkBrush", "—", false, "", "", "",
         false, false, false, true, "", false, "", "",
+        "", "—", "—", "—", 36, 36, "0",
         "", "", "", "", "", "InkTertiaryBrush", "", "", "", 0, "OkBrush", "", "",
         "", false, false);
 }
 
 /// <summary>One outline row. Key is "n{id}" or "m{id}" so the view can name the element without carrying Core types.</summary>
-public partial record OutlineItem(string Key, string Label, string Detail, string Value, string ValueToneKey, bool IsSelected, string RowBrushKey, bool HasBadge, string Badge);
+public partial record OutlineItem(string Key, string Label, string Detail, string Value, string ValueToneKey, bool IsSelected, string RowBrushKey, bool HasBadge, string Badge, bool HasPill, string PillText);
+
+/// <summary>A member connected to the selected node, as listed in the node inspector.</summary>
+public partial record ConnectedItem(string Key, string Label, string Endpoints, string Force, string ForceToneKey, string Util, bool UtilIsDanger);
 
 public partial record PaletteItem(string Id, string Title, string Category, string Shortcut, string Icon, bool HasIcon, bool IsDisabled, bool IsHighlighted, string RowBrushKey);
 

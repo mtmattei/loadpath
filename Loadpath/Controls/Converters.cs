@@ -39,6 +39,19 @@ public sealed class KeyToBrushConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotSupportedException();
 }
 
+/// <summary>bool → one of two brush keys. ConverterParameter is "WhenTrueKey|WhenFalseKey".</summary>
+public sealed class BoolToBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        var keys = (parameter as string ?? "InkBrush|InkBrush").Split('|');
+        var key = value is true ? keys[0] : keys[^1];
+        return Application.Current.Resources.TryGetValue(key, out var brush) && brush is Brush b ? b : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotSupportedException();
+}
+
 /// <summary>bool → 0.5 when true (dimmed), else 1.</summary>
 public sealed class BoolToDimConverter : IValueConverter
 {

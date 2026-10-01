@@ -2,48 +2,55 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Loadpath.Controls"
-             Height="26">
-  <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="12,0">
+             Height="40">
+  <!-- xaml-lint: allow card - utilization pill, not a card; the project uses no Toolkit (README decision) -->
+  <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="16,0,12,0">
     <Grid ColumnSpacing="16">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition x:Name="CursorColumn" Width="170" />
+        <ColumnDefinition x:Name="CursorColumn" Width="Auto" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="*" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
-        <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
 
-      <TextBlock x:Name="Cursor" Text="{Binding CursorText}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
+      <TextBlock x:Name="Cursor" Text="{Binding CursorText}" Style="{StaticResource MonoCaption}" MinWidth="104" VerticalAlignment="Center" />
 
-      <StackPanel x:Name="SnapZoom" Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-        <TextBlock Text="snap" Style="{StaticResource CaptionText}" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding SnapText}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center"
-                   Opacity="{Binding SnapEnabled, Converter={StaticResource Dim}, ConverterParameter=invert}" />
-        <TextBlock Text="·" Style="{StaticResource CaptionText}" VerticalAlignment="Center" />
+      <StackPanel x:Name="SnapZoom" Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+        <Rectangle Width="1" Height="16" Fill="{StaticResource HairlineBrush}" />
+        <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionText}">
+          <Run Text="Snap " /><Run Text="{Binding SnapText}" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkBrush}" />
+        </TextBlock>
         <TextBlock Text="{Binding ZoomText}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
+        <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionText}">
+          <Run Text="Solved in " /><Run Text="{Binding Status.SolveText}" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkBrush}" />
+        </TextBlock>
       </StackPanel>
 
       <TextBlock Grid.Column="2" Text="{Binding Hint}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
 
-      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Forces" IsChecked="{Binding IsForces}" Command="{Binding ShowForces}" ToolTipService.ToolTip="Show axial forces   1" />
-        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Utilization" IsChecked="{Binding IsUtilization}" Command="{Binding ShowUtilization}" ToolTipService.ToolTip="Show utilization   2" />
-        <Rectangle Width="1" Height="14" Fill="{StaticResource HairlineStrongBrush}" Margin="4,0" />
-        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Deflection" IsChecked="{Binding ShowDeflection, Mode=TwoWay, Converter={StaticResource Checked}}" ToolTipService.ToolTip="Show deflected shape   3" />
-        <Slider Style="{StaticResource CompactSlider}" Width="64" Minimum="0.2" Maximum="3" StepFrequency="0.1" Value="{Binding Exaggeration, Mode=TwoWay}"
-                Visibility="{Binding ShowDeflection, Converter={StaticResource Vis}}" ToolTipService.ToolTip="Deflection exaggeration" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding ExaggerationText}" Style="{StaticResource MonoCaption}" MinWidth="30" Margin="2,0,4,0" VerticalAlignment="Center"
+      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <ToggleButton Style="{StaticResource PillToggle}" Content="Deflected" IsChecked="{Binding ShowDeflection, Mode=TwoWay, Converter={StaticResource Checked}}"
+                      ToolTipService.ToolTip="Show deflected shape   3" AutomationProperties.Name="Show deflected shape" />
+        <Slider Style="{StaticResource CompactSlider}" Width="56" Minimum="0.2" Maximum="3" StepFrequency="0.1" Value="{Binding Exaggeration, Mode=TwoWay}"
+                Visibility="{Binding ShowDeflection, Converter={StaticResource Vis}}" ToolTipService.ToolTip="Deflection exaggeration"
+                AutomationProperties.Name="Deflection exaggeration" VerticalAlignment="Center" Margin="4,0,0,0" />
+        <TextBlock Text="{Binding ExaggerationText}" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkBrush}" MinWidth="30" Margin="2,0,4,0" VerticalAlignment="Center"
                    Visibility="{Binding ShowDeflection, Converter={StaticResource Vis}}" />
-        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Labels" IsChecked="{Binding ShowLabels, Mode=TwoWay, Converter={StaticResource Checked}}" ToolTipService.ToolTip="Show force labels   4" />
-        <ToggleButton Style="{StaticResource SegmentToggle}" Content="Reactions" IsChecked="{Binding ShowReactions, Mode=TwoWay, Converter={StaticResource Checked}}" ToolTipService.ToolTip="Show support reactions   5" />
+        <ToggleButton Style="{StaticResource PillToggle}" Content="Labels" IsChecked="{Binding ShowLabels, Mode=TwoWay, Converter={StaticResource Checked}}"
+                      ToolTipService.ToolTip="Show force labels   4" AutomationProperties.Name="Show labels" />
+        <ToggleButton Style="{StaticResource PillToggle}" Content="Reactions" IsChecked="{Binding ShowReactions, Mode=TwoWay, Converter={StaticResource Checked}}"
+                      ToolTipService.ToolTip="Show support reactions   5" AutomationProperties.Name="Show reactions" />
       </StackPanel>
 
-      <Rectangle Grid.Column="4" Width="1" Height="14" Fill="{StaticResource HairlineStrongBrush}" />
-
-      <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-        <TextBlock Text="max" Style="{StaticResource CaptionText}" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding Status.MaxUtilizationText}" Style="{StaticResource MonoCaption}" Foreground="{Binding Status.MaxUtilizationToneKey, Converter={StaticResource Brush}}" VerticalAlignment="Center" />
+      <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <Rectangle Width="1" Height="16" Fill="{StaticResource HairlineBrush}" Margin="0,0,4,0" />
+        <TextBlock Text="Max utilization" Style="{StaticResource CaptionText}" VerticalAlignment="Center" />
+        <Border Style="{StaticResource PillBorder}"
+                Background="{Binding Status.IsOverCapacity, Converter={StaticResource Pick}, ConverterParameter=DangerSoftBrush|TransparentBrush}"
+                BorderBrush="{Binding Status.IsOverCapacity, Converter={StaticResource Pick}, ConverterParameter=DangerBorderBrush|TransparentBrush}">
+          <TextBlock Text="{Binding Status.MaxUtilizationText}" Style="{StaticResource MonoCaption}" Foreground="{Binding Status.MaxUtilizationToneKey, Converter={StaticResource Brush}}" />
+        </Border>
       </StackPanel>
     </Grid>
   </Border>

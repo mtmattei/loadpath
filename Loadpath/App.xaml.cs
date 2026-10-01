@@ -10,8 +10,8 @@ public partial class App : Application
     }
 
     public static Window? MainWindow { get; private set; }
-    public const int LaunchWidth = 1400;
-    public const int LaunchHeight = 860;
+    public const int LaunchWidth = 1440;
+    public const int LaunchHeight = 960;
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {

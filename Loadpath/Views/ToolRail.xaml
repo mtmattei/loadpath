@@ -1,16 +1,17 @@
 <UserControl x:Class="Loadpath.Views.ToolRail"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:c="using:Loadpath.Controls"
-             Width="40">
-  <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineBrush}" BorderThickness="0,0,1,0">
-    <StackPanel Spacing="4" Padding="4,8" HorizontalAlignment="Center">
+             xmlns:c="using:Loadpath.Controls">
+  <!-- Floating tool palette over the drawing. -->
+  <!-- xaml-lint: allow card - floating tool palette; the project uses no Toolkit (README decision) -->
+  <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource HairlineStrongBrush}" BorderThickness="1" CornerRadius="{StaticResource RadiusPopover}" Padding="4">
+    <StackPanel Spacing="2">
       <c:ToolButton IconKind="select" KeyLabel="V" IsActive="{Binding IsSelectActive}" Command="{Binding SelectTool}" ToolTipService.ToolTip="Select   V" AutomationProperties.Name="Select tool" />
       <c:ToolButton IconKind="node" KeyLabel="N" IsActive="{Binding IsNodeActive}" Command="{Binding NodeTool}" ToolTipService.ToolTip="Node   N" AutomationProperties.Name="Node tool" />
       <c:ToolButton IconKind="member" KeyLabel="M" IsActive="{Binding IsMemberActive}" Command="{Binding MemberTool}" ToolTipService.ToolTip="Member   M" AutomationProperties.Name="Member tool" />
       <c:ToolButton IconKind="load" KeyLabel="L" IsActive="{Binding IsLoadActive}" Command="{Binding LoadTool}" ToolTipService.ToolTip="Load   L" AutomationProperties.Name="Load tool" />
       <c:ToolButton IconKind="support" KeyLabel="S" IsActive="{Binding IsSupportActive}" Command="{Binding SupportTool}" ToolTipService.ToolTip="Support   S" AutomationProperties.Name="Support tool" />
-      <Rectangle Height="1" Fill="{StaticResource HairlineBrush}" Margin="4,6" />
+      <Rectangle Height="1" Fill="{StaticResource HairlineBrush}" Margin="4,4" />
       <c:ToolButton IconKind="pan" KeyLabel="H" IsActive="{Binding IsPanActive}" Command="{Binding PanTool}" ToolTipService.ToolTip="Pan   H  (or hold Space)" AutomationProperties.Name="Pan tool" />
     </StackPanel>
   </Border>

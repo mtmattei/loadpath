@@ -180,6 +180,7 @@ public partial record EditorModel
     public IState<double> LoadX => State.Value(this, () => 0.0).ForEach(async (v, ct) => CommitLoad());
     public IState<double> LoadY => State.Value(this, () => 0.0).ForEach(async (v, ct) => CommitLoad());
     public IState<int> SectionIndex => State.Value(this, () => 0).ForEach(async (v, ct) => CommitSection(v));
+    public IListState<ConnectedItem> ConnectedMembers => ListState<ConnectedItem>.Empty(this);
     public IListFeed<SectionChoice> Sections => ListFeed.Async(async ct => (IImmutableList<SectionChoice>)Section.Library.Select(s => new SectionChoice(s.Id, s.Name, s.ShortName)).ToImmutableList());
 
     private int? SelectedNodeId => _engine.Selection.Single is { IsNode: true } r ? r.Id : null;
@@ -353,6 +354,9 @@ public partial record EditorModel
                 break;
         }
         var d = a.DetachedNodeIds.Count;
+        var over = a.IsSolved ? a.Members.Values.Count(m => m.IsOverstressed) : 0;
+        var pillText = over > 0 ? (over == 1 ? "1 member over capacity" : $"{over} members over capacity")
+            : a.IsSolved ? "Within capacity" : $"{text} · {detail.ToLowerInvariant()}";
         var status = new EditorStatus(
             _engine.Document.Name, _engine.IsDirty, text, detail, tone, mechanism, mechanismText,
             a.HasDetached && !mechanism,
@@ -360,12 +364,32 @@ public partial record EditorModel
             a.IsSolved ? $"{a.MaxUtilization * 100:0}%" : "—", UtilTone(a.MaxUtilization),
             _engine.Document.Nodes.Count == 0, h.CanUndo, h.CanRedo,
             h.UndoLabel is { } u ? $"Undo {u.ToLowerInvariant()}" : "Nothing to undo",
-            h.RedoLabel is { } r ? $"Redo {r.ToLowerInvariant()}" : "Nothing to redo");
+            h.RedoLabel is { } r ? $"Redo {r.ToLowerInvariant()}" : "Nothing to redo",
+            pillText, over > 0 || mechanism,
+            a.IsSolved ? $"{a.SolveMilliseconds:0.0} ms" : "—", over > 0);
         await Status.UpdateAsync(_ => status);
     }
 
-    private static string UtilTone(double util) => util >= 1 ? "DangerBrush" : util >= 0.75 ? "TensionBrush" : "OkBrush";
+    private static string UtilTone(double util) => util >= 1 ? "DangerBrush" : util >= 0.75 ? "WarnBrush" : "InkBrush";
     private static string ForceTone(bool tension, bool compression, bool danger) => danger ? "DangerBrush" : tension ? "TensionBrush" : compression ? "CompressionBrush" : "InkTertiaryBrush";
+    private static string SignedKn(double v) => (v >= 0 ? "+" : "−") + $"{Math.Abs(v):0.0}";
+
+    /// <summary>Nearest of eight arrows for a load direction (screen convention: +y is up).</summary>
+    private static string Arrow(Vec2 v)
+    {
+        if (v.LengthSquared < 1e-12) return "";
+        var deg = Math.Atan2(v.Y, v.X) * 180 / Math.PI;
+        var i = (int)Math.Round(((deg % 360) + 360) % 360 / 45) % 8;
+        return "→↗↑↖←↙↓↘"[i].ToString();
+    }
+
+    private static string SupportWord(SupportKind k) => k switch
+    {
+        SupportKind.Pin => "Pin",
+        SupportKind.RollerY => "Roller",
+        SupportKind.RollerX => "Roller y",
+        _ => "",
+    };
     private static string Fmt(double v) => (v >= 0 ? "+" : "−") + $"{Math.Abs(v),6:0.0}";
 
     private async ValueTask RefreshInspectorAsync()
@@ -416,8 +440,26 @@ public partial record EditorModel
             {
                 var r = a.ForNode(node.Id);
                 var members = doc.MembersAt(node.Id).ToList();
+                var disp = a.IsSolved && r is { } dn ? dn.Displacement * 1000 : Vec2.Zero;
+                var hasDisp = a.IsSolved && r is not null;
+                // Mini diagram: 72 px box, direction of travel drawn at a fixed 24 px so small motions still read.
+                var dotX = 36.0; var dotY = 36.0;
+                if (hasDisp && disp.Length > 1e-6) { dotX = 36 + disp.X / disp.Length * 24; dotY = 36 - disp.Y / disp.Length * 24; }
+                var kindText = node.Support switch
+                {
+                    SupportKind.Pin => "Pinned support",
+                    SupportKind.RollerY => "Roller support, free in x",
+                    SupportKind.RollerX => "Roller support, free in y",
+                    _ => "Free node",
+                };
                 c = c with
                 {
+                    NodeDescription = kindText + (node.HasLoad ? $" with a {node.Load.Length:0.#} kN point load" : ""),
+                    DispXText = hasDisp ? $"{disp.X:+0.00;−0.00} mm" : "—",
+                    DispYText = hasDisp ? $"{disp.Y:+0.00;−0.00} mm" : "—",
+                    DispMagText = hasDisp ? $"{disp.Length:0.00} mm" : "—",
+                    DispDotX = dotX, DispDotY = dotY,
+                    ConnectedCountText = members.Count.ToString(),
                     IsSummary = false, IsNode = true,
                     Title = $"Node {node.Id}",
                     Subtitle = node.Support.Label() + (node.HasLoad ? $" · {node.Load.Length:0.#} kN" : ""),
@@ -428,6 +470,16 @@ public partial record EditorModel
                     ReactionText = a.IsSolved && node.HasSupport && r is { } rr ? $"{Fmt(rr.Reaction.X)}  {Fmt(rr.Reaction.Y)} kN" : "",
                     DisplacementText = a.IsSolved && r is { } dr ? $"{dr.Displacement.X * 1000:+0.00;−0.00}  {dr.Displacement.Y * 1000:+0.00;−0.00} mm" : "—",
                 };
+                var connected = members.Select(m =>
+                {
+                    var mr = a.IsSolved ? a.For(m.Id) : null;
+                    return new ConnectedItem($"m{m.Id}", $"M{m.Id}", $"N{m.StartNodeId}–N{m.EndNodeId}",
+                        mr is { } f ? SignedKn(f.AxialForceKn) : "—",
+                        mr is { } t && t.IsOverstressed ? "DangerBrush" : "InkBrush",
+                        mr is { } u ? $"{u.Utilization * 100:0}%" : "",
+                        mr is { IsOverstressed: true });
+                }).ToImmutableList();
+                await ConnectedMembers.UpdateAsync(_ => connected);
                 await NodeX.SetAsync(node.Position.X);
                 await NodeY.SetAsync(node.Position.Y);
                 await LoadX.SetAsync(node.Load.X);
@@ -484,9 +536,10 @@ public partial record EditorModel
         var nodes = doc.Nodes.Select(n =>
         {
             var selected = sel.Contains(n.Ref);
-            return new OutlineItem($"n{n.Id}", $"N{n.Id}", $"{n.Position.X:0.##}, {n.Position.Y:0.##}", n.HasLoad ? $"{n.Load.Length:0.#} kN" : "",
-                "InkTertiaryBrush", selected, selected ? "SurfaceHoverBrush" : "TransparentBrush", n.HasSupport,
-                n.Support switch { SupportKind.Pin => "PIN", SupportKind.RollerY or SupportKind.RollerX => "ROL", _ => "" });
+            // Round, then add +0.0: -0.0 + 0.0 is +0.0, so a node at x = -1e-12 reads "0" instead of "-0".
+            return new OutlineItem($"n{n.Id}", $"N{n.Id}", $"{Math.Round(n.Position.X, 2) + 0.0:0.##}, {Math.Round(n.Position.Y, 2) + 0.0:0.##}",
+                n.HasLoad ? $"{Arrow(n.Load)}{n.Load.Length:0.#} kN" : "",
+                "InkBrush", selected, selected ? "SelectionBrush" : "TransparentBrush", n.HasSupport, SupportWord(n.Support), false, "");
         }).ToImmutableList();
         var members = doc.Members.Select(m =>
         {
@@ -494,15 +547,16 @@ public partial record EditorModel
             var r = a.For(m.Id);
             var solved = a.IsSolved && r is { } rr;
             var res = r ?? default;
-            return new OutlineItem($"m{m.Id}", $"M{m.Id}", $"N{m.StartNodeId}–N{m.EndNodeId} · {m.Section.Name}",
-                solved ? (res.AxialForceKn >= 0 ? "+" : "−") + $"{Math.Abs(res.AxialForceKn):0.0}" : "",
+            return new OutlineItem($"m{m.Id}", $"M{m.Id}", $"N{m.StartNodeId}-N{m.EndNodeId}",
+                solved ? (Math.Abs(res.AxialForceKn) < 0.05 ? "0.0" : SignedKn(res.AxialForceKn)) : "",
                 solved ? ForceTone(res.IsTension, res.IsCompression, res.IsOverstressed) : "InkTertiaryBrush",
-                selected, selected ? "SurfaceHoverBrush" : "TransparentBrush", false, "");
+                selected, selected ? "SelectionBrush" : "TransparentBrush", false, "",
+                solved && res.IsOverstressed, solved ? $"{res.Utilization * 100:0}%" : "");
         }).ToImmutableList();
         await OutlineNodes.UpdateAsync(_ => nodes);
         await OutlineMembers.UpdateAsync(_ => members);
-        await NodesHeader.SetAsync($"Nodes · {doc.Nodes.Count}");
-        await MembersHeader.SetAsync($"Members · {doc.Members.Count}");
+        await NodesHeader.SetAsync(doc.Nodes.Count.ToString());
+        await MembersHeader.SetAsync(doc.Members.Count.ToString());
         await OutlineIsEmpty.SetAsync(doc.Nodes.Count == 0);
     }
 }

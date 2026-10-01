@@ -2,12 +2,13 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Loadpath.Controls"
-             RequestedTheme="Dark">
+             RequestedTheme="Light">
   <Application.Resources>
     <ResourceDictionary>
       <c:BoolToVisibilityConverter x:Key="Vis" />
       <c:TextToVisibilityConverter x:Key="VisText" />
       <c:KeyToBrushConverter x:Key="Brush" />
+      <c:BoolToBrushConverter x:Key="Pick" />
       <c:BoolToDimConverter x:Key="Dim" />
       <c:NullableBoolConverter x:Key="Checked" />
       <ResourceDictionary.MergedDictionaries>

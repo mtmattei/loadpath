@@ -11,11 +11,11 @@ public sealed partial class StatusBar : UserControl
         SizeChanged += (_, e) => ApplyCompact(e.NewSize.Width);
     }
 
-    /// <summary>Below 960 px the cursor readout gives way so the display toggles and the max utilization stay whole.</summary>
+    /// <summary>Below 1080 px the cursor readout gives way so the display toggles and the max utilization stay whole.</summary>
     private void ApplyCompact(double width)
     {
-        var compact = width < 960;
+        var compact = width < 1080;
         Cursor.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
-        CursorColumn.Width = compact ? new GridLength(0) : new GridLength(170);
+        CursorColumn.Width = compact ? new GridLength(0) : GridLength.Auto;
     }
 }
