@@ -67,7 +67,7 @@ public partial record PaletteItem(string Id, string Title, string Category, stri
 /// <summary>Counts beside each layer in the Reduce noise flyout.</summary>
 public record LayerCounts(string Grid, string Supports, string Loads, string OverCapacity, string MemberForces, string Reactions)
 {
-    public static readonly LayerCounts Empty = new("0.5 M", "0", "0", "0", "0", "0");
+    public static readonly LayerCounts Empty = new("0.5 m", "0", "0", "0", "0", "0");
 }
 
 /// <summary>A section choice for the inspector, decoupled from the Core record.</summary>

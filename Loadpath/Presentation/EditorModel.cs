@@ -101,7 +101,7 @@ public partial record EditorModel
         Ui(() => apply(_engine.Options));
     }
 
-    private string SnapLabel() => _engine.Options.SnapEnabled ? $"{_engine.Options.GridStep:0.##} M" : "OFF";
+    private string SnapLabel() => _engine.Options.SnapEnabled ? $"{_engine.Options.GridStep:0.##} m" : "OFF";
     private string ExaggerationLabel() => $"×{_engine.Options.Exaggeration:0.0}";
 
     private string NoiseSummaryText()
@@ -415,13 +415,13 @@ public partial record EditorModel
             h.UndoLabel is { } u ? $"Undo {u.ToLowerInvariant()}" : "Nothing to undo",
             h.RedoLabel is { } r ? $"Redo {r.ToLowerInvariant()}" : "Nothing to redo",
             pillText, over > 0 || mechanism,
-            a.IsSolved ? $"{a.SolveMilliseconds:0.0} MS" : "—", over > 0);
+            a.IsSolved ? $"{a.SolveMilliseconds:0.0} ms" : "—", over > 0);
         await Status.UpdateAsync(_ => status);
 
         var doc = _engine.Document;
         var supports = doc.Nodes.Count(n => n.HasSupport);
         await Counts.UpdateAsync(_ => new LayerCounts(
-            $"{_engine.Options.GridStep:0.##} M",
+            $"{_engine.Options.GridStep:0.##} m",
             supports.ToString(),
             doc.Nodes.Count(n => n.HasLoad).ToString(),
             over.ToString(),
@@ -449,6 +449,8 @@ public partial record EditorModel
         SupportKind.RollerX => "ROLLER Y",
         _ => "",
     };
+    private static string Plural(int n, string noun) => n == 1 ? $"1 {noun}" : $"{n} {noun}s";
+
     private static string Fmt(double v) => (Math.Round(v, 1) >= 0 ? "+" : "−") + $"{Math.Abs(v),6:0.0}";
 
     private async ValueTask RefreshInspectorAsync()
@@ -483,7 +485,7 @@ public partial record EditorModel
                     MaxUtilToneKey = UtilTone(a.MaxUtilization),
                     MaxDeflectionText = a.IsSolved ? $"{a.MaxDisplacementM * 1000:0.0} mm" : "—",
                     HasCritical = a.IsSolved && a.CriticalMemberId is not null,
-                    CriticalText = a.CriticalMemberId is { } cid ? $"Member {cid} governs" : "",
+                    CriticalText = a.CriticalMemberId is { } cid ? $"M{cid} governs" : "",
                     ReactionsText = reactions,
                     SummaryHint = a.Status switch
                     {
@@ -520,7 +522,7 @@ public partial record EditorModel
                     DispDotX = dotX, DispDotY = dotY,
                     ConnectedCountText = members.Count.ToString(),
                     IsSummary = false, IsNode = true, SelectionHasNodes = true, SelectionLabel = $"N{node.Id}",
-                    Title = $"Node {node.Id}",
+                    Title = $"Node N{node.Id}",
                     Subtitle = node.Support.Label() + (node.HasLoad ? $" · {node.Load.Length:0.#} kN" : ""),
                     IsPin = node.Support == SupportKind.Pin, IsRoller = node.Support == SupportKind.RollerY,
                     IsRollerX = node.Support == SupportKind.RollerX, IsFree = node.Support == SupportKind.None,
@@ -550,7 +552,7 @@ public partial record EditorModel
                 c = c with
                 {
                     IsSummary = false, IsMember = true, SelectionLabel = $"M{member.Id}",
-                    Title = $"Member {member.Id}",
+                    Title = $"Member M{member.Id}",
                     Subtitle = member.Section.Name,
                     EndpointsText = $"N{member.StartNodeId} → N{member.EndNodeId}",
                     LengthText = $"{doc.MemberLength(member):0.000} m",
@@ -572,9 +574,9 @@ public partial record EditorModel
             {
                 c = c with
                 {
-                    IsSummary = false, IsMixed = true, SelectionHasNodes = sel.NodeCount > 0, SelectionLabel = $"{sel.Count} sel",
+                    IsSummary = false, IsMixed = true, SelectionHasNodes = sel.NodeCount > 0, SelectionLabel = $"{sel.Count} selected",
                     Title = $"{sel.Count} selected",
-                    Subtitle = $"{sel.NodeCount} nodes · {sel.MemberCount} members",
+                    Subtitle = $"{Plural(sel.NodeCount, "node")} · {Plural(sel.MemberCount, "member")}",
                     MixedHasNodes = sel.NodeCount > 0,
                     MixedHasMembers = sel.MemberCount > 0,
                     MixedText = "Bulk actions apply to every selected element.",
@@ -595,7 +597,7 @@ public partial record EditorModel
             var selected = sel.Contains(n.Ref);
             // Round, then add +0.0: -0.0 + 0.0 is +0.0, so a node at x = -1e-12 reads "0" instead of "-0".
             return new OutlineItem($"n{n.Id}", $"N{n.Id}", $"{Math.Round(n.Position.X, 2) + 0.0:0.##}, {Math.Round(n.Position.Y, 2) + 0.0:0.##}",
-                n.HasLoad ? $"{Arrow(n.Load)} {n.Load.Length:0.#} KN" : "",
+                n.HasLoad ? $"{Arrow(n.Load)} {n.Load.Length:0.#} kN" : "",
                 "InkBrush", selected ? "SelectionBrush" : "TransparentBrush", n.HasSupport, SupportWord(n.Support), false, "");
         }).ToImmutableList();
         var members = doc.Members.Select(m =>

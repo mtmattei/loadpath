@@ -50,7 +50,8 @@
       <TextBlock Text="LOADPATH" FontFamily="{StaticResource MonoFontMedium}" FontSize="14" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" />
       <TextBlock Text="/" Style="{StaticResource MonoCaption}" Foreground="{StaticResource InkTertiaryBrush}" VerticalAlignment="Center" />
       <StackPanel x:Name="DocumentName" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-        <TextBlock Text="{Binding Status.DocumentName, Converter={StaticResource Upper}}" FontFamily="{StaticResource MonoFontMedium}" FontSize="12" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding Status.DocumentName, Converter={StaticResource Upper}}" FontFamily="{StaticResource MonoFontMedium}" FontSize="12" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center"
+                 MaxWidth="240" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Status.DocumentName}" />
         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" c:Motion.Reveal="True" Visibility="{Binding Status.IsDirty, Converter={StaticResource Vis}}">
           <Ellipse Width="5" Height="5" Fill="{StaticResource InkBrush}" VerticalAlignment="Center" />
           <TextBlock Text="UNSAVED" Style="{StaticResource MonoCaption}" FontSize="11" VerticalAlignment="Center" />

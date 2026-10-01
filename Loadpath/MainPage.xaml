@@ -118,9 +118,9 @@
           </TextBlock>
           <TextBlock Text="Or start from a sample" Style="{StaticResource SectionLabel}" HorizontalAlignment="Center" Margin="0,10,0,0" />
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <Button Style="{StaticResource OutlineButton}" Content="Warren truss" Command="{Binding SampleWarren}" AutomationProperties.Name="Load Warren truss sample" />
-            <Button Style="{StaticResource OutlineButton}" Content="Cantilever" Command="{Binding SampleCantilever}" AutomationProperties.Name="Load cantilever sample" />
-            <Button Style="{StaticResource OutlineButton}" Content="Howe roof" Command="{Binding SampleRoof}" AutomationProperties.Name="Load Howe roof sample" />
+            <Button Style="{StaticResource OutlineButton}" Content="WARREN TRUSS" Command="{Binding SampleWarren}" AutomationProperties.Name="Load Warren truss sample" />
+            <Button Style="{StaticResource OutlineButton}" Content="CANTILEVER" Command="{Binding SampleCantilever}" AutomationProperties.Name="Load cantilever sample" />
+            <Button Style="{StaticResource OutlineButton}" Content="HOWE ROOF" Command="{Binding SampleRoof}" AutomationProperties.Name="Load Howe roof sample" />
           </StackPanel>
         </StackPanel>
         </Border>

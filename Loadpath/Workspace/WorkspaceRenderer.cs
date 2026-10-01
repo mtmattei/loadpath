@@ -406,7 +406,7 @@ public sealed class WorkspaceRenderer : IDisposable
             DimLine(canvas, sx(minX), spanY, sx(maxX), spanY);
             Slash(canvas, sx(minX), spanY);
             Slash(canvas, sx(maxX), spanY);
-            DimText(canvas, $"{maxX - minX:0.000} M", (sx(minX) + sx(maxX)) / 2, spanY - 5);
+            DimText(canvas, $"{maxX - minX:0.000} m", (sx(minX) + sx(maxX)) / 2, spanY - 5);
         }
 
         if (maxY - minY > 1e-6)
@@ -531,7 +531,7 @@ public sealed class WorkspaceRenderer : IDisposable
             if (n.LoadKn.LengthSquared < 1e-12) continue;
             var color = n.Dimmed ? SkiaPalette.Accent.WithAlpha(0.35) : SkiaPalette.Accent;
             DrawArrow(canvas, n.LoadTail, n.Screen, 8f, color, 1.3f, n.Selected || n.Hovered, true);
-            DrawArrowLabel(canvas, n.LoadTail, n.Screen, $"{n.LoadKn.Length:0.#} KN", color, s.Center);
+            DrawArrowLabel(canvas, n.LoadTail, n.Screen, $"{n.LoadKn.Length:0.#} kN", color, s.Center);
         }
     }
 
@@ -546,7 +546,7 @@ public sealed class WorkspaceRenderer : IDisposable
                 var tail = new SKPoint(n.Screen.X, n.Screen.Y + dir * 92);
                 var head = new SKPoint(n.Screen.X, n.Screen.Y + dir * 32);
                 DrawArrow(canvas, tail, head, 7f, SkiaPalette.Accent, 1.1f, false, false);
-                var text = $"R {Math.Abs(n.ReactionKn.Y):0.0} KN";
+                var text = $"R {Math.Abs(n.ReactionKn.Y):0.0} kN";
                 var w = _monoSmall.MeasureText(text);
                 var y = dir > 0 ? tail.Y + 15 : tail.Y - 7;
                 _labelRects.Add(new SKRect(tail.X - w / 2 - 3, y - 11, tail.X + w / 2 + 3, y + 3));
@@ -559,7 +559,7 @@ public sealed class WorkspaceRenderer : IDisposable
                 var tail = new SKPoint(n.Screen.X + dir * 76, n.Screen.Y);
                 var head = new SKPoint(n.Screen.X + dir * 16, n.Screen.Y);
                 DrawArrow(canvas, tail, head, 7f, SkiaPalette.Accent, 1.1f, false, false);
-                DrawArrowLabel(canvas, tail, head, $"R {Math.Abs(n.ReactionKn.X):0.0} KN", SkiaPalette.Accent, s.Center);
+                DrawArrowLabel(canvas, tail, head, $"R {Math.Abs(n.ReactionKn.X):0.0} kN", SkiaPalette.Accent, s.Center);
             }
         }
     }
@@ -711,7 +711,7 @@ public sealed class WorkspaceRenderer : IDisposable
         if (o.LoadPreview is { } lp)
         {
             DrawArrow(canvas, lp.Tail, lp.Node, 8f, SkiaPalette.Accent, 1.3f, true, true);
-            DrawArrowLabel(canvas, lp.Tail, lp.Node, $"{lp.MagnitudeKn:0.#} KN", SkiaPalette.Accent, s.Center);
+            DrawArrowLabel(canvas, lp.Tail, lp.Node, $"{lp.MagnitudeKn:0.#} kN", SkiaPalette.Accent, s.Center);
         }
 
         if (o.GhostNode is { } ghost)
@@ -745,7 +745,7 @@ public sealed class WorkspaceRenderer : IDisposable
             var tag = $"[ {s.StructureKind.ToUpperInvariant()} · {s.Members.Length} {(s.Members.Length == 1 ? "MEMBER" : "MEMBERS")} ]";
             VerticalText(canvas, tag, s.Width - FrameInset - 18, FrameInset + 12);
         }
-        VerticalText(canvas, "[ KN · M ]", s.Width - FrameInset - 18, s.Height - FrameInset - 12 - _monoSmall.MeasureText("[ KN · M ]"));
+        VerticalText(canvas, "[ kN · m ]", s.Width - FrameInset - 18, s.Height - FrameInset - 12 - _monoSmall.MeasureText("[ kN · m ]"));
 
         if (s.Nodes.Length < 2 || s.Members.Length == 0) return;
         double minX = double.MaxValue, maxX = double.MinValue;
