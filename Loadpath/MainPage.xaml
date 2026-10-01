@@ -57,8 +57,10 @@
         </Border>
 
         <!-- Empty state -->
-        <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" MaxWidth="440"
-                    Visibility="{Binding Status.IsEmpty, Converter={StaticResource Vis}}">
+        <!-- A paper plate behind the text so the registration marks do not run through it. -->
+        <Border x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{StaticResource CanvasBrush}" Padding="32,24"
+                Visibility="{Binding Status.IsEmpty, Converter={StaticResource Vis}}">
+        <StackPanel Spacing="14" MaxWidth="440">
           <TextBlock Text="Fig. 00" Style="{StaticResource SectionLabel}" HorizontalAlignment="Center" />
           <TextBlock Text="Draw a structure and it answers." Style="{StaticResource DisplayText}" HorizontalAlignment="Center" />
           <TextBlock Style="{StaticResource SecondaryText}" TextAlignment="Center" TextWrapping="Wrap">
@@ -74,6 +76,7 @@
             <Button Style="{StaticResource OutlineButton}" Content="Howe roof" Command="{Binding SampleRoof}" AutomationProperties.Name="Load Howe roof sample" />
           </StackPanel>
         </StackPanel>
+        </Border>
 
         <!-- Floating selection bar, positioned by code above the selection -->
         <Border x:Name="FloatingBar" HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed"

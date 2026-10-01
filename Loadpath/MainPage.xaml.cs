@@ -145,10 +145,17 @@ public sealed partial class MainPage : Page
     private void RestoreOrSeed()
     {
         var sample = Environment.GetEnvironmentVariable("LOADPATH_SAMPLE");
+        var fixtureFile = Environment.GetEnvironmentVariable("LOADPATH_FILE");
         if (!string.IsNullOrEmpty(sample))
         {
             Engine.LoadSample(sample);
         }
+#if DEBUG
+        else if (!string.IsNullOrEmpty(fixtureFile) && File.Exists(fixtureFile))
+        {
+            Engine.LoadSnapshot(DocumentSerializer.Deserialize(File.ReadAllText(fixtureFile)), "Open", null);
+        }
+#endif
         else if (Environment.GetEnvironmentVariable("LOADPATH_RESET") != "1" && File.Exists(_settings.AutosavePath))
         {
             try
@@ -186,6 +193,7 @@ public sealed partial class MainPage : Page
                     case "deflection": Engine.Options.ShowDeflection = true; break;
                     case "reactions": Engine.Options.ShowReactions = true; break;
                     case "nolabels": Engine.Options.ShowLabels = false; break;
+                    case "labels": Engine.Options.ShowLabels = true; break;
                 }
             }
         }
@@ -242,6 +250,8 @@ public sealed partial class MainPage : Page
 
         if (XamlRoot is { } xr && IsTextInputFocused(xr))
         {
+            // The palette shortcut works from anywhere, including a focused number field.
+            if (ctrl && key == VirtualKey.K && Palette.Visibility != Visibility.Visible) { _ = Model.TogglePalette(default); e.Handled = true; return; }
             if (key == VirtualKey.Escape && Palette.Visibility != Visibility.Visible) { KeySink.Focus(FocusState.Programmatic); e.Handled = true; }
             return;
         }
@@ -350,9 +360,12 @@ public sealed partial class MainPage : Page
         FloatingBar.Visibility = Visibility.Visible;
         FloatingBar.UpdateLayout();
         var w = FloatingBar.ActualWidth > 0 ? FloatingBar.ActualWidth : 150;
-        var x = Math.Clamp(bounds.Center.X - w / 2, 8, Math.Max(8, WorkspaceHost.ActualWidth - w - 8));
-        var y = bounds.Min.Y - 52;
-        if (y < 8) y = bounds.Max.Y + 28;
+        // Up and to the right of the selection, clear of its load arrow; flip left when it would leave the sheet.
+        var x = bounds.Max.X + 24;
+        if (x + w > WorkspaceHost.ActualWidth - 8) x = bounds.Min.X - 24 - w;
+        x = Math.Clamp(x, 32, Math.Max(32, WorkspaceHost.ActualWidth - w - 8));
+        var y = bounds.Min.Y - 80;
+        if (y < 32) y = bounds.Max.Y + 28;
         FloatingBar.Margin = new Thickness(x, y, 0, 0);
     }
 

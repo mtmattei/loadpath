@@ -5,19 +5,19 @@
   <!-- xaml-lint: allow card - support and utilization pills, not cards; the project uses no Toolkit (README decision) -->
   <UserControl.Resources>
     <DataTemplate x:Key="OutlineRow">
-      <Border Height="32" Padding="40,0,16,0" Background="{Binding RowBrushKey, Converter={StaticResource Brush}}" Tag="{Binding Key}"
+      <Border Height="32" Padding="36,0,14,0" Background="{Binding RowBrushKey, Converter={StaticResource Brush}}" Tag="{Binding Key}"
               PointerPressed="OnRowPressed" PointerEntered="OnRowEntered" PointerExited="OnRowExited">
-        <Grid ColumnSpacing="10">
+        <Grid ColumnSpacing="8">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="28" />
-            <ColumnDefinition Width="*" />
             <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="Auto" />
           </Grid.ColumnDefinitions>
           <TextBlock Text="{Binding Label}" Style="{StaticResource MonoCaption}" FontFamily="{StaticResource MonoFontMedium}" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
-          <TextBlock Grid.Column="1" Text="{Binding Detail}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-          <Border Grid.Column="2" Style="{StaticResource PillBorder}" Visibility="{Binding HasBadge, Converter={StaticResource Vis}}">
+          <TextBlock Grid.Column="1" Text="{Binding Detail}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
+          <Border Grid.Column="2" Style="{StaticResource PillBorder}" HorizontalAlignment="Right" Visibility="{Binding HasBadge, Converter={StaticResource Vis}}">
             <TextBlock Text="{Binding Badge}" Style="{StaticResource MonoCaption}" FontSize="10" LineHeight="14" Foreground="{StaticResource InkSecondaryBrush}" />
           </Border>
           <TextBlock Grid.Column="3" Text="{Binding Value}" Style="{StaticResource MonoCaption}" Foreground="{Binding ValueToneKey, Converter={StaticResource Brush}}" VerticalAlignment="Center" TextAlignment="Right" />

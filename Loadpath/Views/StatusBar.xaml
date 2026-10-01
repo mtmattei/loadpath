@@ -22,9 +22,7 @@
           <Run Text="Snap " /><Run Text="{Binding SnapText}" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkBrush}" />
         </TextBlock>
         <TextBlock Text="{Binding ZoomText}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
-        <TextBlock VerticalAlignment="Center" Style="{StaticResource CaptionText}">
-          <Run Text="Solved in " /><Run Text="{Binding Status.SolveText}" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource InkBrush}" />
-        </TextBlock>
+        <TextBlock Text="{Binding Status.SolveText}" Style="{StaticResource MonoCaption}" VerticalAlignment="Center" />
       </StackPanel>
 
       <TextBlock Grid.Column="2" Text="{Binding Hint}" Style="{StaticResource CaptionText}" VerticalAlignment="Center" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />

@@ -366,7 +366,7 @@ public partial record EditorModel
             h.UndoLabel is { } u ? $"Undo {u.ToLowerInvariant()}" : "Nothing to undo",
             h.RedoLabel is { } r ? $"Redo {r.ToLowerInvariant()}" : "Nothing to redo",
             pillText, over > 0 || mechanism,
-            a.IsSolved ? $"{a.SolveMilliseconds:0.0} ms" : "—", over > 0);
+            a.IsSolved ? $"Solved in {a.SolveMilliseconds:0.0} ms" : "Not solved", over > 0);
         await Status.UpdateAsync(_ => status);
     }
 
@@ -390,7 +390,7 @@ public partial record EditorModel
         SupportKind.RollerX => "Roller y",
         _ => "",
     };
-    private static string Fmt(double v) => (v >= 0 ? "+" : "−") + $"{Math.Abs(v),6:0.0}";
+    private static string Fmt(double v) => (Math.Round(v, 1) >= 0 ? "+" : "−") + $"{Math.Abs(v),6:0.0}";
 
     private async ValueTask RefreshInspectorAsync()
     {
@@ -412,7 +412,7 @@ public partial record EditorModel
                 c = c with
                 {
                     IsSummary = true,
-                    Title = doc.Nodes.Count == 0 ? "Structure" : doc.Name,
+                    Title = doc.Name,
                     Subtitle = doc.Nodes.Count == 0 ? "Nothing here yet" : "Nothing selected",
                     NodeCountText = doc.Nodes.Count.ToString(),
                     MemberCountText = doc.Members.Count.ToString(),
@@ -474,7 +474,7 @@ public partial record EditorModel
                 {
                     var mr = a.IsSolved ? a.For(m.Id) : null;
                     return new ConnectedItem($"m{m.Id}", $"M{m.Id}", $"N{m.StartNodeId}–N{m.EndNodeId}",
-                        mr is { } f ? SignedKn(f.AxialForceKn) : "—",
+                        mr is { } f ? (Math.Abs(f.AxialForceKn) < 0.05 ? "0.0" : SignedKn(f.AxialForceKn)) : "—",
                         mr is { } t && t.IsOverstressed ? "DangerBrush" : "InkBrush",
                         mr is { } u ? $"{u.Utilization * 100:0}%" : "",
                         mr is { IsOverstressed: true });
@@ -538,7 +538,7 @@ public partial record EditorModel
             var selected = sel.Contains(n.Ref);
             // Round, then add +0.0: -0.0 + 0.0 is +0.0, so a node at x = -1e-12 reads "0" instead of "-0".
             return new OutlineItem($"n{n.Id}", $"N{n.Id}", $"{Math.Round(n.Position.X, 2) + 0.0:0.##}, {Math.Round(n.Position.Y, 2) + 0.0:0.##}",
-                n.HasLoad ? $"{Arrow(n.Load)}{n.Load.Length:0.#} kN" : "",
+                n.HasLoad ? $"{Arrow(n.Load)} {n.Load.Length:0.#} kN" : "",
                 "InkBrush", selected, selected ? "SelectionBrush" : "TransparentBrush", n.HasSupport, SupportWord(n.Support), false, "");
         }).ToImmutableList();
         var members = doc.Members.Select(m =>

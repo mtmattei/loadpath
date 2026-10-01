@@ -43,7 +43,7 @@ public sealed partial class WorkspaceView : SKCanvasElement
             if (_editor is not null && _fitted && _editor.Document.Nodes.Count > 0)
             {
                 _animTimer?.Stop();
-                var target = _editor.Viewport.ComputeFit(_editor.Document.GetBounds());
+                var target = SheetFit(_editor.Document.GetBounds());
                 _editor.Viewport.Set(target.Scale, target.Offset);
             }
             _editor?.Interaction.RefreshZoomText();
@@ -147,7 +147,7 @@ public sealed partial class WorkspaceView : SKCanvasElement
             var tail = HitTester.LoadHandleScreen(n, vp);
             var isSelected = sel.Contains(n.Ref);
             var dim = (dimOthers && !connected.Contains(n.Id)) || (detached?.Contains(n.Id) ?? false);
-            nodes[i] = new RenderSnapshot.NodeItem(n.Id, P(s), P(deflected), n.Support, n.Load, P(tail), r?.Reaction ?? Vec2.Zero, isSelected, hover == n.Ref, dim);
+            nodes[i] = new RenderSnapshot.NodeItem(n.Id, P(s), P(deflected), n.Support, n.Load, P(tail), r?.Reaction ?? Vec2.Zero, isSelected, hover == n.Ref, dim, n.Position);
         }
 
         var members = new RenderSnapshot.MemberItem[doc.Members.Count];
@@ -182,6 +182,8 @@ public sealed partial class WorkspaceView : SKCanvasElement
             Width = width,
             Height = height,
             AnySelected = anySelected,
+            DocumentName = doc.Name,
+            Exaggeration = options.Exaggeration,
             Center = bounds.IsEmpty ? new SKPoint(width / 2, height / 2) : P(vp.ToScreen(bounds.Center)),
         };
     }
@@ -319,8 +321,26 @@ public sealed partial class WorkspaceView : SKCanvasElement
         if (_editor is null) return;
         _fitted = true;
         var bounds = _editor.Document.GetBounds();
-        var target = _editor.Viewport.ComputeFit(bounds);
+        var target = SheetFit(bounds);
         AnimateViewport(target.Scale, target.Offset, TimeSpan.FromMilliseconds(280));
+    }
+
+    /// <summary>
+    /// Fit into the drawing area of the sheet: inside the rulers, clear of the floating tool palette on the left,
+    /// and above the band that holds dimension lines and the figure legend.
+    /// </summary>
+    private (double Scale, Vec2 Offset) SheetFit(Bounds world)
+    {
+        var vp = _editor!.Viewport;
+        if (world.IsEmpty || vp.ScreenWidth <= 0 || vp.ScreenHeight <= 0) return vp.ComputeFit(world);
+        const double left = 104, top = 120, right = 72, bottom = 200;
+        var areaW = Math.Max(120, vp.ScreenWidth - left - right);
+        var areaH = Math.Max(120, vp.ScreenHeight - top - bottom);
+        var w = Math.Max(world.Width, 1.0);
+        var h = Math.Max(world.Height, 1.0);
+        var scale = Math.Clamp(Math.Min(areaW * 0.9 / w, areaH * 0.9 / h), Core.Viewport.Viewport.MinScale, Core.Viewport.Viewport.MaxScale);
+        var c = world.Center;
+        return (scale, new Vec2(left + areaW / 2 - c.X * scale, top + areaH / 2 + c.Y * scale));
     }
 
     private void AnimateZoom(Vec2 anchor, double newScale)

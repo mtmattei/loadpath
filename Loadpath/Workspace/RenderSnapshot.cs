@@ -8,7 +8,7 @@ namespace Loadpath.Workspace;
 /// <summary>Plain data the renderer reads. Built on the UI thread at invalidation; never touches the live document.</summary>
 public sealed class RenderSnapshot
 {
-    public readonly record struct NodeItem(int ElementId, SKPoint Screen, SKPoint Deflected, SupportKind Support, Vec2 LoadKn, SKPoint LoadTail, Vec2 ReactionKn, bool Selected, bool Hovered, bool Dimmed);
+    public readonly record struct NodeItem(int ElementId, SKPoint Screen, SKPoint Deflected, SupportKind Support, Vec2 LoadKn, SKPoint LoadTail, Vec2 ReactionKn, bool Selected, bool Hovered, bool Dimmed, Vec2 World);
 
     public readonly record struct MemberItem(int ElementId, SKPoint A, SKPoint B, SKPoint DeflectedA, SKPoint DeflectedB, double ForceKn, double Utilization, bool Overstressed, bool BucklingGoverns, bool Selected, bool Hovered, bool Dimmed);
 
@@ -29,6 +29,9 @@ public sealed class RenderSnapshot
     public float Width { get; init; }
     public float Height { get; init; }
     public bool AnySelected { get; init; }
+    public string DocumentName { get; init; } = "";
+    /// <summary>User deflection factor, shown in the legend.</summary>
+    public double Exaggeration { get; init; } = 1;
     /// <summary>Screen-space center of the structure; labels are pushed away from it.</summary>
     public SKPoint Center { get; init; }
 
