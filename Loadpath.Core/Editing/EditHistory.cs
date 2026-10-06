@@ -20,6 +20,24 @@ public sealed class EditHistory
     public string? RedoLabel => _redo.Count > 0 ? _redo[^1].Label : null;
     public int Version { get; private set; }
 
+    // The save point is the undo entry on top when the document was saved (null: empty history).
+    // Undo and redo move the top, so returning to that entry means the document matches the file again.
+    // A discarded entry never comes back, so a branch away from the save point stays dirty for good.
+    private IEdit? _savedTop;
+    private bool _saveValid = true;
+
+    private IEdit? Top => _undo.Count > 0 ? _undo[^1] : null;
+
+    /// <summary>True when the document is back at the state recorded by MarkSaved.</summary>
+    public bool IsAtSavePoint => _saveValid && ReferenceEquals(Top, _savedTop);
+
+    public void MarkSaved()
+    {
+        _savedTop = Top;
+        _saveValid = true;
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
     /// <summary>Apply an edit and push it. Coalesces into the previous edit when that edit accepts it.</summary>
     public void Do(IEdit edit)
     {
@@ -32,6 +50,8 @@ public sealed class EditHistory
         _redo.Clear();
         if (_undo.Count > 0 && _undo[^1] is ICoalescingEdit prev && prev.TryCoalesce(edit))
         {
+            // The saved entry just grew past what was saved; it can no longer mark the save point.
+            if (ReferenceEquals(prev, _savedTop)) _saveValid = false;
             Version++;
             Changed?.Invoke(this, EventArgs.Empty);
             return;
@@ -85,9 +105,13 @@ public sealed class EditHistory
 
     public void Clear()
     {
+        var wasClean = IsAtSavePoint;
         _undo.Clear();
         _redo.Clear();
         _openTransaction = null;
+        // Clearing keeps the content, so it stays clean only if it was clean.
+        _savedTop = null;
+        _saveValid = wasClean;
         Version++;
         Changed?.Invoke(this, EventArgs.Empty);
     }

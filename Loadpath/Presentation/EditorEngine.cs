@@ -44,7 +44,7 @@ public sealed class EditorEngine
     public WorkspaceInteraction Interaction { get; }
     public AnalysisResult Analysis { get; private set; }
     public string? FilePath { get; set; }
-    public bool IsDirty => History.Version != _savedVersion;
+    public bool IsDirty => !History.IsAtSavePoint;
     public bool HasSelection => !Selection.IsEmpty;
 
     /// <summary>Raised after every document change, once the analysis has been recomputed.</summary>
@@ -60,7 +60,6 @@ public sealed class EditorEngine
     public event EventHandler? PaletteRequested;
     public event EventHandler? SavedStateChanged;
 
-    private int _savedVersion;
 
     public void RequestRender() => RenderRequested?.Invoke(this, EventArgs.Empty);
     public void Toast(string message) => ToastRequested?.Invoke(this, message);
@@ -89,7 +88,7 @@ public sealed class EditorEngine
 
     public void MarkSaved()
     {
-        _savedVersion = History.Version;
+        History.MarkSaved();
         SavedStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
