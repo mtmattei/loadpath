@@ -464,7 +464,13 @@ Three additions that make a design leave the app, start faster, and say clearly 
 
 ### Addendum — Upsize failing members
 
-- **Decision**: lightest library section under 95 % utilization for each failing member, same material first. Only failing members change.
+- **Decision**: lightest library section under 95 % utilization for each failing member, same material first. Members the upsize resizes or pushes upward are held to the same 95 %; members already near their limit and not made worse keep their section.
 - **Reason**: it answers "what do I change?" directly from the failure list, and the result stays one undo step.
-- **Tradeoff**: in a redundant truss, resizing moves force onto members that were not failing. The sizer re-solves up to 8 passes, but a member that ends just under 100 % is left alone. Downsizing over-designed members is a separate feature.
+- **Tradeoff**: in a redundant truss, resizing moves force onto members that were not failing. The sizer re-solves up to 8 passes, and holds every touched or pushed member to the target.
 - The section library gained CHS 114.3×5.0, CHS 139.7×5.0 and SHS 100×100×5. The previous largest section (SHS 80) buckles at about 145 kN over 4 m, too little for a 24 m bridge.
+
+### Addendum — Lighten members
+
+- **Decision**: a separate command (`Shift+U`), never part of upsize. It gives each loaded member the lightest same-material section that keeps every member within its limit (95 %, or its own utilization if already above), trying the heaviest members first and re-solving after each change.
+- **Reason**: lightening changes members nobody flagged and redistributes load, so the user opts in. Upsize stays "make the red go away".
+- **Tradeoff**: greedy one-member-at-a-time search is not a global mass optimum, and costs one solve per tried section (milliseconds at this scale). Zero-force members keep their section because they often brace the frame against out-of-plane or construction loads the 2D model does not see. It refuses while anything fails.

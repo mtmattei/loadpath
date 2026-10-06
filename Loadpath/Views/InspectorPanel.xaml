@@ -77,7 +77,7 @@
             </Grid>
             <Grid Style="{StaticResource Row}">
               <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-              <TextBlock Text="Steel mass" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
+              <TextBlock Text="Mass" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
               <TextBlock Grid.Column="1" Text="{Binding Inspector.MassText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
             </Grid>
           </StackPanel>
@@ -102,6 +102,16 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <c:Icon Kind="target" Width="14" Height="14" Foreground="{StaticResource InkBrush}" />
                 <TextBlock Text="{Binding Inspector.CriticalText, Converter={StaticResource Upper}}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Button Style="{StaticResource InspectorAction}" Command="{Binding Lighten}" HorizontalAlignment="Stretch" Margin="0,8,0,0"
+                    c:Motion.Reveal="True" Visibility="{Binding CanLighten, Converter={StaticResource Vis}}"
+                    ToolTipService.ToolTip="Lightest same-material section that keeps every member within capacity   Shift+U" AutomationProperties.Name="Lighten members">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="LIGHTEN MEMBERS" VerticalAlignment="Center" />
+                <Border Style="{StaticResource Keycap}">
+                  <TextBlock Text="SHIFT U" Style="{StaticResource KeycapText}" />
+                </Border>
               </StackPanel>
             </Button>
             <!-- Members over capacity, worst first. The failure mode is spelled out; red only reinforces it. -->

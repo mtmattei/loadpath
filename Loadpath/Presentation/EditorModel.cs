@@ -201,6 +201,7 @@ public partial record EditorModel
     [Command] public void SupportPin() => Ui(() => SetSupport(SupportKind.Pin));
     [Command] public void SupportRoller() => Ui(() => SetSupport(SupportKind.RollerY));
     [Command] public void SupportRollerX() => Ui(() => SetSupport(SupportKind.RollerX));
+    [Command] public void Lighten() => Ui(() => _engine.LightenMembers());
     [Command] public void UpsizeFailing() => Ui(() => _engine.UpsizeFailingMembers());
     [Command] public void SelectMember(string key) => Ui(() => _engine.SelectByKey(key, false));
     [Command] public void SampleWarren() => Ui(() => _engine.LoadSample("warren"));
@@ -281,6 +282,8 @@ public partial record EditorModel
 
     public IListState<FailureItem> Failures => ListState<FailureItem>.Empty(this);
     public IState<bool> HasFailures => State.Value(this, () => false);
+    /// <summary>Solved with nothing failing: the moment "Lighten members" applies.</summary>
+    public IState<bool> CanLighten => State.Value(this, () => false);
     public IState<string> FailuresHeader => State.Value(this, () => "");
 
     private async ValueTask RefreshFailuresAsync()
@@ -299,6 +302,7 @@ public partial record EditorModel
         }).ToImmutableList();
         await Failures.UpdateAsync(_ => items);
         await HasFailures.SetAsync(items.Count > 0);
+        await CanLighten.SetAsync(_engine.Analysis.IsSolved && items.Count == 0 && _engine.Document.Members.Count > 0);
         await FailuresHeader.SetAsync(items.Count == 1 ? "1 MEMBER" : $"{items.Count} MEMBERS");
     }
 
