@@ -32,11 +32,6 @@
       <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
       <Setter Property="Margin" Value="0,0,10,0" />
     </Style>
-    <Style x:Key="FieldLabel" TargetType="TextBlock" BasedOn="{StaticResource MonoCaption}">
-      <Setter Property="FontSize" Value="11" />
-      <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
-      <Setter Property="Margin" Value="0,0,0,8" />
-    </Style>
   </UserControl.Resources>
 
   <Grid>
@@ -82,7 +77,7 @@
             </Grid>
             <Grid Style="{StaticResource Row}">
               <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-              <TextBlock Text="Steel mass" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
+              <TextBlock Text="Mass" Style="{StaticResource SecondaryText}" VerticalAlignment="Center" />
               <TextBlock Grid.Column="1" Text="{Binding Inspector.MassText}" Style="{StaticResource ValueText}" VerticalAlignment="Center" />
             </Grid>
           </StackPanel>
@@ -109,6 +104,54 @@
                 <TextBlock Text="{Binding Inspector.CriticalText, Converter={StaticResource Upper}}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
+            <Button Style="{StaticResource InspectorAction}" Command="{Binding Lighten}" HorizontalAlignment="Stretch" Margin="0,8,0,0"
+                    c:Motion.Reveal="True" Visibility="{Binding CanLighten, Converter={StaticResource Vis}}"
+                    ToolTipService.ToolTip="Lightest same-material section that keeps every member within capacity   Shift+U" AutomationProperties.Name="Lighten members">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="LIGHTEN MEMBERS" VerticalAlignment="Center" />
+                <Border Style="{StaticResource Keycap}">
+                  <TextBlock Text="SHIFT U" Style="{StaticResource KeycapText}" />
+                </Border>
+              </StackPanel>
+            </Button>
+            <!-- Members over capacity, worst first. The failure mode is spelled out; red only reinforces it. -->
+            <StackPanel Margin="0,14,0,0" c:Motion.Reveal="True" Visibility="{Binding HasFailures, Converter={StaticResource Vis}}">
+              <Grid Margin="0,0,0,4">
+                <TextBlock Text="OVER CAPACITY" Style="{StaticResource MonoCaption}" FontSize="11" Foreground="{StaticResource DangerBrush}" />
+                <TextBlock Text="{Binding FailuresHeader}" Style="{StaticResource MonoCaption}" FontSize="11" HorizontalAlignment="Right" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding Failures}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Style="{StaticResource QuietButton}" Height="44" Padding="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                            Command="{Binding DataContext.SelectMember, ElementName=Panel}" CommandParameter="{Binding Key}"
+                            AutomationProperties.Name="{Binding AutomationName}">
+                      <Grid ColumnSpacing="10">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="36" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Label}" Style="{StaticResource MonoCaption}" FontFamily="{StaticResource MonoFontMedium}" Foreground="{StaticResource InkBrush}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Mode}" Style="{StaticResource MonoCaption}" FontFamily="{StaticResource MonoFontMedium}" FontSize="11" Foreground="{StaticResource DangerBrush}" />
+                          <TextBlock Text="{Binding Detail}" Style="{StaticResource MonoCaption}" FontSize="10.5" LineHeight="14" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <!-- xaml-lint: allow card - utilization pill, not a card; no Toolkit by README decision -->
+                        <Border Grid.Column="2" Style="{StaticResource DangerPill}">
+                          <TextBlock Text="{Binding Util}" Style="{StaticResource MonoCaption}" FontSize="10" LineHeight="14" Foreground="{StaticResource DangerBrush}" />
+                        </Border>
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Style="{StaticResource InspectorAction}" Command="{Binding UpsizeFailing}" HorizontalAlignment="Stretch" Margin="0,10,0,0"
+                      ToolTipService.ToolTip="Lightest library section that carries each failing member   U" AutomationProperties.Name="Upsize failing members">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Text="UPSIZE FAILING MEMBERS" VerticalAlignment="Center" />
+                  <Border Style="{StaticResource Keycap}">
+                    <TextBlock Text="U" Style="{StaticResource KeycapText}" />
+                  </Border>
+                </StackPanel>
+              </Button>
+            </StackPanel>
           </StackPanel>
           <StackPanel c:Motion.Reveal="True" Visibility="{Binding ShowResultDetails, Converter={StaticResource Vis}}">
             <Rectangle Style="{StaticResource Rule}" Visibility="{Binding Inspector.ReactionsText, Converter={StaticResource VisText}}" />
@@ -308,7 +351,7 @@
             <TextBlock Text="{Binding Inspector.MaterialText}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,10,0,0" />
             <TextBlock Text="{Binding Inspector.AreaText}" Style="{StaticResource MonoCaption}" Margin="0,2,0,0" />
             <TextBlock Text="Drag a section onto any member to apply it." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,10,0,0" />
-            <!-- Eight chips overflow one 296 px row; a uniform grid gives two rows of four instead of clipping. -->
+            <!-- The chips overflow one 296 px row; a uniform grid wraps them into rows of four instead of clipping. -->
             <ItemsRepeater ItemsSource="{Binding Sections}" Margin="0,8,0,0">
               <ItemsRepeater.Layout>
                 <UniformGridLayout MinItemWidth="68" MinItemHeight="24" MinColumnSpacing="4" MinRowSpacing="4" ItemsStretch="Fill" />

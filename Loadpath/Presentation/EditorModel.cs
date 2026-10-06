@@ -3,6 +3,7 @@ using Uno.Extensions.Reactive.Commands;
 using Uno.Extensions.Reactive.Config;
 using Loadpath.Core.Analysis;
 using Loadpath.Core.Editing;
+using Loadpath.Core.Samples;
 
 namespace Loadpath.Presentation;
 
@@ -200,11 +201,16 @@ public partial record EditorModel
     [Command] public void SupportPin() => Ui(() => SetSupport(SupportKind.Pin));
     [Command] public void SupportRoller() => Ui(() => SetSupport(SupportKind.RollerY));
     [Command] public void SupportRollerX() => Ui(() => SetSupport(SupportKind.RollerX));
+    [Command] public void Lighten() => Ui(() => _engine.LightenMembers());
+    [Command] public void UpsizeFailing() => Ui(() => _engine.UpsizeFailingMembers());
+    [Command] public void SelectMember(string key) => Ui(() => _engine.SelectByKey(key, false));
     [Command] public void SampleWarren() => Ui(() => _engine.LoadSample("warren"));
     [Command] public void SampleCantilever() => Ui(() => _engine.LoadSample("cantilever"));
     [Command] public void SampleRoof() => Ui(() => _engine.LoadSample("roof"));
     [Command] public void OpenFile() => Ui(() => _engine.Commands.TryExecute("file.open"));
     [Command] public void SaveFile() => Ui(() => _engine.Commands.TryExecute("file.save"));
+    [Command] public void ShareDesign() => Ui(() => _engine.Commands.TryExecute("file.share"));
+    [Command] public void PasteDesign() => Ui(() => _engine.Commands.TryExecute("file.paste"));
     [Command] public void ToggleNodes() => Fire(NodesExpanded.UpdateAsync(v => !v));
     [Command] public void ToggleMembers() => Fire(MembersExpanded.UpdateAsync(v => !v));
 
@@ -270,6 +276,91 @@ public partial record EditorModel
         if (_syncingFields || SelectedMemberId is not { } id || index < 0 || index >= Section.Library.Count) return;
         var section = Section.Library[index];
         Ui(() => { if (_engine.Document.FindMember(id) is { } m && m.Section != section) _engine.History.Do(new SetSectionEdit([id], section)); });
+    }
+
+    // ---- failures (summary inspector) ----
+
+    public IListState<FailureItem> Failures => ListState<FailureItem>.Empty(this);
+    public IState<bool> HasFailures => State.Value(this, () => false);
+    /// <summary>Solved with nothing failing: the moment "Lighten members" applies.</summary>
+    public IState<bool> CanLighten => State.Value(this, () => false);
+    public IState<string> FailuresHeader => State.Value(this, () => "");
+
+    private async ValueTask RefreshFailuresAsync()
+    {
+        var doc = _engine.Document;
+        var failures = _engine.Analysis.Failures;
+        var items = failures.Select(f =>
+        {
+            var verb = EditorEngine.FailureVerb(f.Failure);
+            var m = doc.FindMember(f.MemberId);
+            var detail = m is null ? "" : f.Failure == FailureMode.Buckling
+                ? $"{Math.Abs(f.AxialForceKn):0.0} kN on Pcr {m.Section.CriticalBucklingLoadN(f.LengthM) / 1000:0.0} kN"
+                : $"{Math.Abs(f.StressMPa):0} MPa on fy {m.Section.Material.YieldStrengthMPa:0} MPa";
+            return new FailureItem($"m{f.MemberId}", $"M{f.MemberId}", verb.ToUpperInvariant(), $"{f.Utilization * 100:0}%", detail,
+                $"Select member M{f.MemberId}, {verb} at {f.Utilization * 100:0} percent");
+        }).ToImmutableList();
+        await Failures.UpdateAsync(_ => items);
+        await HasFailures.SetAsync(items.Count > 0);
+        await CanLighten.SetAsync(_engine.Analysis.IsSolved && items.Count == 0 && _engine.Document.Members.Count > 0);
+        await FailuresHeader.SetAsync(items.Count == 1 ? "1 MEMBER" : $"{items.Count} MEMBERS");
+    }
+
+    // ---- presets ----
+
+    private static readonly PresetParameters StartParameters = new(12, 6, 2);
+    public IState<double> PresetSpan => State.Value(this, () => StartParameters.Span).ForEach(async (v, ct) => await RebuildPresetsAsync(ct));
+    public IState<double> PresetPanels => State.Value(this, () => (double)StartParameters.Panels).ForEach(async (v, ct) => await RebuildPresetsAsync(ct));
+    public IState<double> PresetDepth => State.Value(this, () => StartParameters.Depth).ForEach(async (v, ct) => await RebuildPresetsAsync(ct));
+    public IListState<PresetItem> Presets => ListState.Value(this, () => BuildPresetItems(StartParameters));
+
+    private async ValueTask<PresetParameters> ReadPresetParametersAsync(CancellationToken ct)
+    {
+        var raw = new PresetParameters(await PresetSpan, (int)Math.Round(await PresetPanels), await PresetDepth);
+        var p = raw.Clamped();
+        // Write clamped values back so the fields show what will be built. Equal values do not re-fire ForEach.
+        if (p.Span != raw.Span) await PresetSpan.SetAsync(p.Span, ct);
+        if (p.Panels != await PresetPanels) await PresetPanels.SetAsync(p.Panels, ct);
+        if (p.Depth != raw.Depth) await PresetDepth.SetAsync(p.Depth, ct);
+        return p;
+    }
+
+    private async ValueTask RebuildPresetsAsync(CancellationToken ct)
+    {
+        var p = await ReadPresetParametersAsync(ct);
+        await Presets.UpdateAsync(_ => BuildPresetItems(p), ct);
+    }
+
+    [Command]
+    public async ValueTask LoadPreset(string id, CancellationToken ct)
+    {
+        var p = await ReadPresetParametersAsync(ct);
+        Ui(() => _engine.LoadPreset(id, p));
+    }
+
+    private const double SketchWidth = 156, SketchHeight = 52, SketchPad = 3;
+
+    private static IImmutableList<PresetItem> BuildPresetItems(PresetParameters p) =>
+        TrussPresets.Catalog.Select(preset =>
+        {
+            var snapshot = TrussPresets.Build(preset.Id, p);
+            var k = snapshot.Members.Count;
+            var size = preset.UsesPanels ? $"{p.Span:0.#} m · {snapshot.Nodes.Count} N · {k} M" : $"{p.Span:0.#} m · rise {p.Depth:0.#} m";
+            return new PresetItem(preset.Id, preset.Title.ToUpperInvariant(), preset.Description, Sketch(snapshot), size, $"Load {preset.Title} preset");
+        }).ToImmutableList();
+
+    /// <summary>Fit the geometry into the thumbnail box, y up, and emit its members as pixel segments.</summary>
+    private static string Sketch(DocumentSnapshot s)
+    {
+        if (s.Nodes.Count == 0) return "";
+        var pos = s.Nodes.ToDictionary(n => n.Id, n => n.Position);
+        double minX = pos.Values.Min(v => v.X), maxX = pos.Values.Max(v => v.X), minY = pos.Values.Min(v => v.Y), maxY = pos.Values.Max(v => v.Y);
+        var scale = Math.Min((SketchWidth - 2 * SketchPad) / Math.Max(maxX - minX, 1e-6), (SketchHeight - 2 * SketchPad) / Math.Max(maxY - minY, 1e-6));
+        var ox = (SketchWidth - (maxX - minX) * scale) / 2;
+        var oy = (SketchHeight + (maxY - minY) * scale) / 2;
+        var ci = System.Globalization.CultureInfo.InvariantCulture;
+        string P(Vec2 v) => string.Create(ci, $"{ox + (v.X - minX) * scale:0.#},{oy - (v.Y - minY) * scale:0.#}");
+        return string.Join(";", s.Members.Select(m => $"{P(pos[m.Start])},{P(pos[m.End])}"));
     }
 
     // ---- outline ----
@@ -372,6 +463,7 @@ public partial record EditorModel
         await RefreshStatusAsync();
         await RefreshInspectorAsync();
         await RefreshOutlineAsync();
+        await RefreshFailuresAsync();
     }
 
     private async ValueTask RefreshSelectionAsync()
@@ -485,7 +577,7 @@ public partial record EditorModel
                     MaxUtilToneKey = UtilTone(a.MaxUtilization),
                     MaxDeflectionText = a.IsSolved ? $"{a.MaxDisplacementM * 1000:0.0} mm" : "—",
                     HasCritical = a.IsSolved && a.CriticalMemberId is not null,
-                    CriticalText = a.CriticalMemberId is { } cid ? $"M{cid} governs" : "",
+                    CriticalText = a.Failures.Count > 0 ? $"Step through failures · J" : a.CriticalMemberId is { } cid ? $"M{cid} governs" : "",
                     ReactionsText = reactions,
                     SummaryHint = a.Status switch
                     {
@@ -565,7 +657,12 @@ public partial record EditorModel
                     Util = solved ? Math.Clamp(mr.Utilization, 0, 1) : 0,
                     UtilText = solved ? $"{mr.Utilization * 100:0}%" : "—",
                     UtilToneKey = solved ? UtilTone(mr.Utilization) : "OkBrush",
-                    GovernsText = solved ? (mr.IsOverstressed ? (mr.BucklingGoverns ? "Fails by buckling" : "Fails by yield") : (mr.BucklingGoverns ? "Buckling governs" : "Yield governs")) : "",
+                    GovernsText = solved ? mr.Failure switch
+                    {
+                        FailureMode.Buckling => "Fails by buckling: the strut bows out",
+                        FailureMode.Yield => mr.IsTension ? "Fails by yield: the tie stretches" : "Fails by yield: the strut crushes",
+                        _ => mr.BucklingGoverns ? "Buckling governs" : "Yield governs",
+                    } : "",
                     BucklingText = solved ? (mr.IsCompression ? $"Pcr {member.Section.CriticalBucklingLoadN(mr.LengthM) / 1000:0.0} kN · {mr.UtilizationBuckling * 100:0}%" : "n/a (tension)") : "—",
                 };
                 await SectionIndex.SetAsync(Math.Max(0, Section.Library.ToList().IndexOf(member.Section)));

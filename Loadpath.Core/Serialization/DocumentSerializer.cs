@@ -45,7 +45,10 @@ public static class DocumentSerializer
         public string Section { get; set; } = Model.Section.Chs48.Id;
     }
 
-    public static string Serialize(StructureDocument doc)
+    private static readonly JsonSerializerOptions CompactOptions = new(Options) { WriteIndented = false };
+
+    /// <summary>Serialize the document. Compact output drops whitespace; share codes use it.</summary>
+    public static string Serialize(StructureDocument doc, bool indented = true)
     {
         var model = new FileModel { Name = doc.Name };
         foreach (var n in doc.Nodes)
@@ -64,7 +67,7 @@ public static class DocumentSerializer
         {
             model.Members.Add(new MemberModel { Id = m.Id, Start = m.StartNodeId, End = m.EndNodeId, Section = m.Section.Id });
         }
-        return JsonSerializer.Serialize(model, Options);
+        return JsonSerializer.Serialize(model, indented ? Options : CompactOptions);
     }
 
     public static DocumentSnapshot Deserialize(string json)

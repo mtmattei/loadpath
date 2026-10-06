@@ -411,3 +411,67 @@ None (single page). The `Frame` hosts `MainPage` directly; no Uno navigation ext
 - File pickers on the Linux X11 host: if `FileSavePicker` is not functional headless, the Documents-folder fallback ships and the picker path is verified on Windows by the user. Accepted as a risk, time-boxed to 10 minutes.
 - `SKFont` text rendering of the bundled JetBrains Mono through `SKTypeface.FromStream` on `net10.0-desktop`: expected to work (Liveline draws text this way in this repo); verify in the first canvas screenshot.
 - Keyboard focus routing from the page to the canvas after clicking a `SKCanvasElement` (not focusable): solved with a focusable `FocusSink` control; verify `PreviewKeyDown` reaches the page on Skia desktop within the first workspace milestone.
+
+---
+
+## Stage 5 — Share, presets, failure highlighting
+
+Three additions that make a design leave the app, start faster, and say clearly where it breaks. Saving to `.loadpath` files already ships (Stage 4); this stage adds a text form of the same document that travels through chat, issues and email.
+
+### Architecture Brief
+
+- **Module structure**: all logic lands in `Loadpath.Core` so it is unit-tested without UI. `Serialization/ShareCode` (encode/decode), `Samples/TrussPresets` (parametric generators, the existing samples stay as fixed entries), `Analysis/FailureMode` plus a `Failures` list on `AnalysisResult`. The app adds commands, one flyout and renderer layers only.
+- **State model**: no new document state. A share code is a pure function of the document. Preset parameters (span, panels, depth) are three MVUX states on `EditorModel`; the preset list is a list state rebuilt from them. Failures are part of `AnalysisResult`, projected into an `InspectorContent` field and a `FailureItem` list state.
+- **Navigation model**: unchanged. Presets open in a title-strip flyout; share and paste are commands (title strip, palette, shortcuts).
+- **Services/dependencies**: clipboard through `Windows.ApplicationModel.DataTransfer.Clipboard`. When it throws, the code is written next to the Documents fallback folder and a toast says where. Compression with `System.IO.Compression.DeflateStream`. No new packages.
+- **Data flow**: Share: document → `DocumentSerializer` compact JSON → deflate → base64url → `LP1.` prefix → clipboard. Paste: clipboard text → `ShareCode.TryDecode` (accepts a code, a code inside surrounding text, or raw `.loadpath` JSON) → `DocumentSnapshot` → `ReplaceDocumentEdit`. Presets: parameters → generator → `DocumentSnapshot` → `ReplaceDocumentEdit`.
+- **Platform constraints**: X11 clipboard works only with an owner window alive; the fallback file covers hosts without one.
+- **Testing/validation approach**: xunit for share round-trip (exact equality of nodes, members, loads, supports, sections), corrupt and foreign input, raw JSON fallback; every preset at several parameter sets solves stable and below a sanity utilization; failure mode classification (yield vs buckling) on a hand-checked strut. Runtime: Xvfb drive through share → new → paste, preset flyout, an overloaded structure with buckling and yield failures.
+
+### Design Brief
+
+- **Visual direction**: the blueprint sheet stays. Failure is red, and its *mode* is spelled, never only colored: pills read `BUCKLES 132%` or `YIELDS 118%`.
+- **Buckled shape**: a member failing by buckling gets a thin red half-sine bow beside its ribbon (the first Euler mode), drawn dashed like the deflected ghost. It is the one new drawing primitive and it reads as "this strut bows out".
+- **Presets flyout**: same `SheetFlyoutPresenter` as Reduce noise. Header row of three mono number fields (SPAN m, PANELS, DEPTH m), then a two-column grid of preset tiles: a line thumbnail of the generated geometry (blueprint ink on paper) above a mono caption and a one-line description.
+- **Typography/spacing**: existing tokens only. Mono 11–12 for captions, Inter for descriptions, 8/12/16 spacing.
+- **Component hierarchy**: TitleStrip → `PRESETS` link button (flyout) · `SHARE` link button · `OPEN` · `SAVE`. Inspector summary → "Failures" section listing rows (M id, mode, utilization) under the max-utilization bar.
+- **Responsive behavior**: `SHARE` and `PRESETS` collapse with the search button below 720 px; both stay reachable through the palette.
+
+### Interaction Brief
+
+- **User flows**: *Share*: click SHARE or `Ctrl+Shift+C` → toast "Share code copied (1.2 kB). Paste it in Loadpath with Ctrl+Shift+V." *Paste*: `Ctrl+Shift+V` or palette "Paste design" → document replaced, view fits, toast "Pasted Warren truss · Ctrl+Z to undo". *Preset*: PRESETS → adjust span/panels/depth → click a tile → document replaced, flyout closes, view fits, toast "Pratt truss · Ctrl+Z restores your previous structure". *Failures*: `J` cycles through failing members, worst first; with none failing it selects the governing member as before.
+- **Input behavior**: number fields clamp (span 2–60 m, panels 2–16 even-rounded where a preset needs it, depth 0.3–12 m). Paste accepts leading/trailing text so a code copied out of a chat message still works.
+- **Empty states**: the empty-state invitation adds "or paste a share code (Ctrl+Shift+V)". The inspector failures section is hidden when nothing fails.
+- **Loading states**: none; every step is synchronous and sub-millisecond.
+- **Error states**: clipboard empty or unreadable → toast "Clipboard has no Loadpath design". Malformed code → "That share code is damaged or incomplete". Newer version → the serializer's version message.
+- **Animations/transitions**: flyout uses the existing sheet presenter motion; nothing new.
+- **Feedback states**: toasts for copy/paste/preset; status pill unchanged; failing rows in the inspector highlight on hover and select on click.
+- **Accessibility**: tiles and failure rows are buttons with `AutomationProperties.Name` ("Load Pratt truss preset", "Select member M7, buckles at 132%"); the failure mode is text, not color; shortcuts listed in tooltips and the palette.
+- **Runtime verification steps**: build; Xvfb run; capture the presets flyout, a preset loaded, an overloaded Warren with `BUCKLES`/`YIELDS` pills and buckled glyphs plus the failures list, share → new → paste round trip (document name and member count match).
+
+### Implementation Plan
+
+1. Core: `ShareCode`, `TrussPresets`, failure mode on `MemberResult` and the `Failures` list. Tests.
+2. Engine: share/paste/preset/cycle-failure commands; undoable replacement.
+3. UI: title-strip PRESETS flyout and SHARE; inspector failures section; empty-state hint.
+4. Renderer: mode-labelled pills, buckled half-sine glyph, legend entry.
+5. Xvfb verification, README update.
+
+### Unresolved Questions
+
+- Should a share code also carry view options (display mode, exaggeration)? Left out: the code describes the structure, and the receiver keeps their own view.
+- URL form (`https://…/#LP1.…`) needs a hosted viewer; out of scope until there is one.
+
+### Addendum — Upsize failing members
+
+- **Decision**: lightest library section under 95 % utilization for each failing member, same material first. Members the upsize resizes or pushes upward are held to the same 95 %; members already near their limit and not made worse keep their section.
+- **Reason**: it answers "what do I change?" directly from the failure list, and the result stays one undo step.
+- **Tradeoff**: in a redundant truss, resizing moves force onto members that were not failing. The sizer re-solves up to 8 passes, and holds every touched or pushed member to the target.
+- The section library gained CHS 114.3×5.0, CHS 139.7×5.0 and SHS 100×100×5. The previous largest section (SHS 80) buckles at about 145 kN over 4 m, too little for a 24 m bridge.
+
+### Addendum — Lighten members
+
+- **Decision**: a separate command (`Shift+U`), never part of upsize. It gives each loaded member the lightest same-material section that keeps every member within its limit (95 %, or its own utilization if already above), trying the heaviest members first and re-solving after each change.
+- **Reason**: lightening changes members nobody flagged and redistributes load, so the user opts in. Upsize stays "make the red go away".
+- **Tradeoff**: greedy one-member-at-a-time search is not a global mass optimum, and costs one solve per tried section (milliseconds at this scale). Zero-force members keep their section because they often brace the frame against out-of-plane or construction loads the 2D model does not see. It refuses while anything fails.
+- The library also gained timber C24 45×145, 45×195 and 63×195 (strong-axis I, matching 45×95). With a single timber size, upsize had to switch roofs to steel and lighten could do nothing for them. An 18 m Fink now upsizes to 45×145. Steel is used only past 63×195 (about 295 kN in yield).

@@ -122,6 +122,14 @@
             <Button Style="{StaticResource OutlineButton}" Content="CANTILEVER" Command="{Binding SampleCantilever}" AutomationProperties.Name="Load cantilever sample" />
             <Button Style="{StaticResource OutlineButton}" Content="HOWE ROOF" Command="{Binding SampleRoof}" AutomationProperties.Name="Load Howe roof sample" />
           </StackPanel>
+          <Button Style="{StaticResource LinkButton}" HorizontalAlignment="Center" Command="{Binding PasteDesign}" AutomationProperties.Name="Paste a design from a share code">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="OR PASTE A SHARE CODE" VerticalAlignment="Center" />
+              <Border Style="{StaticResource Keycap}">
+                <TextBlock Text="CTRL SHIFT V" Style="{StaticResource KeycapText}" />
+              </Border>
+            </StackPanel>
+          </Button>
         </StackPanel>
         </Border>
 

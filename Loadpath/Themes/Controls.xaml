@@ -51,6 +51,13 @@
     <Setter Property="Foreground" Value="{StaticResource InkSecondaryBrush}" />
   </Style>
 
+  <!-- Label above a numeric field (inspector, presets). -->
+  <Style x:Key="FieldLabel" TargetType="TextBlock" BasedOn="{StaticResource MonoCaption}">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+  </Style>
+
   <!-- ===== Pills (read-only badges) ===== -->
   <Style x:Key="PillBorder" TargetType="Border">
     <Setter Property="BorderThickness" Value="1" />

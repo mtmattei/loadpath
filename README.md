@@ -29,8 +29,13 @@ In Debug, set `APP_NO_HOTDESIGN=1` to skip `UseStudio()` when no DevServer is re
 | Outline | Nodes and members with support badges and signed forces; click selects, hover highlights on canvas. |
 | Display modes | `1` forces, `2` utilization ramp, `3` deflected ghost with exaggeration slider, `4` labels, `5` reactions. |
 | Commands | Every action is an `AppCommand` with one shortcut label. `Ctrl+K` opens a searchable palette; right-click opens element-specific menus. |
-| Undo/redo | Every mutation is a reversible edit. Drags coalesce into one entry. `Ctrl+Z`, `Ctrl+Y`. |
+| Undo/redo | Every mutation is a reversible edit. Drags coalesce into one entry. `Ctrl+Z`, `Ctrl+Y`. The history remembers the save point, so undoing back to the saved state clears UNSAVED; branching away from it keeps the document dirty. |
 | Persistence | `.loadpath` JSON documents (save, save as, open), autosave restored on launch, view options persisted. |
+| Share | `SHARE` or `Ctrl+Shift+C` copies a one-line share code (`LP1.` + base64url of the deflated JSON, about 460 characters for the Warren sample). `Ctrl+Shift+V` (or "Paste design" in the palette or empty state) loads a code, a code inside a chat message, or raw `.loadpath` JSON. Pasting is one undo step. Without a clipboard the code goes to `~/Documents/Loadpath/<name>.share.txt` and paste reads it back. |
+| Presets | `PRESETS` opens a flyout with Pratt, Howe, Warren, K, Fink and scissor trusses, generated from span, panels and depth (rise for roofs), each with a live thumbnail. A preset ships with supports, panel-point loads (5 kN/m deck for bridges, 2 kN/m for roofs) and sections, so it solves at once. Loading one is undoable; the palette lists each preset at its defaults. |
+| Failure highlighting | Members over capacity carry a red pill that names the mode: `BUCKLES 294%` or `YIELDS 118%` (the pill drops the verb when crowded). A member failing by buckling also gets its first Euler mode drawn beside it as a dashed red bow, with a legend entry. The summary inspector lists every failure worst first, with the force against Pcr or the stress against fy; a row selects its member. `J` steps through the failures, with a toast giving the position ("2 of 6"). |
+| Upsize | `U`, the inspector's UPSIZE FAILING MEMBERS button, or the palette gives every failing member the lightest library section that carries it below 95 % utilization, as one undo step. A member keeps its material when that material has a working section. Redundant trusses are re-solved and resized until they settle. The toast reports the count and added mass ("Upsized 6 members · +157.3 kg"), and names any member no library section can carry. A passing member changes only if the upsize itself pushes it above 95 % (load moves in a redundant truss); one that was already near its limit and is not made worse keeps its section. |
+| Lighten | `Shift+U`, LIGHTEN MEMBERS in the summary inspector, or the palette gives members the lightest same-material section that keeps every member under 95 % (or under its own utilization, if it was already above), as one undo step. It runs only when nothing fails, tries the heaviest members first and re-solves after each change, and leaves zero-force members alone because they often brace the frame. The toast reports the mass saved and the new max utilization: the Warren sample drops from 252 to 128 kg at 89 %. |
 | States | Empty-state invitation with three samples, mechanism banner when the structure can move, a warning when parts are not connected to a support (they are left out of the solve instead of failing it), toasts for refused actions. |
 
 ![Howe roof in utilization mode with the deflected shape](docs/shot2.png)
@@ -41,18 +46,22 @@ In Debug, set `APP_NO_HOTDESIGN=1` to skip `UseStudio()` when no DevServer is re
 
 ![Empty state](docs/shot5.png)
 
+![Overloaded Pratt: buckling pills, buckled shapes and the failure list, stepping with J](docs/shot6.png)
+
+![Presets flyout](docs/shot7.png)
+
 ## Architecture
 
 ```
 Loadpath.Core/      net10.0 class library, no UI dependency
   Model/            StructureDocument, Node, Member, Section, Material
-  Analysis/         TrussSolver (direct stiffness), LinearSolver, AnalysisResult
+  Analysis/         TrussSolver (direct stiffness), LinearSolver, AnalysisResult, SectionSizer (upsize failing members, lighten the rest)
   Editing/          IEdit, EditHistory (undo/redo, coalescing, transactions), edits
   Selection/        SelectionSet
   Viewport/         Viewport (world ↔ screen, zoom-at-point, fit)
   Geometry/         Vec2, Bounds, HitTester, SnapEngine, GridSteps
-  Serialization/    DocumentSerializer (JSON v1)
-  Samples/          Warren, cantilever, Howe roof
+  Serialization/    DocumentSerializer (JSON v1), ShareCode (LP1. text codes)
+  Samples/          Warren, cantilever, Howe roof; TrussPresets (parametric Pratt, Howe, Warren, K, Fink, scissor)
 Loadpath/           Uno single-project app
   Presentation/     EditorEngine (imperative), EditorModel (MVUX states, feeds, commands), Records, ViewOptions
   Commands/         AppCommand, CommandRegistry (shortcut parsing)
@@ -74,17 +83,21 @@ Loadpath.Tests/     xunit: solver against method-of-joints values, mechanism det
 
 ## Validation
 
+- Share, presets and failures (Stage 5 of `SPEC.md`): share codes round-trip every sample exactly, decode from inside surrounding text and from raw JSON, and refuse empty, foreign, truncated and corrupt input with a readable reason. Every preset at four parameter sets (defaults, small, odd panel count, 16 panels) solves with no detached parts, spans exactly the requested width, and balances its applied load with its reactions; defaults stay below full utilization; Pratt diagonals are in tension and Howe diagonals in compression. A slender strut fails by buckling, an overloaded tie by yield, and failures sort worst first. Section sizing brings an overloaded Pratt within capacity, changes only failing members in a determinate truss, picks the lightest working section per material, converges on a redundant K truss without leaving a touched or pushed member above 95 %, leaves a passing structure alone and reports loads beyond the library. Lighten saves mass without raising any member past its limit, keeps material and zero-force members, refuses while something fails, converges on a redundant truss, and is idempotent. The undo history's save point is clean after undo or redo back to it, dirty after branching away or extending the saved drag, and survives a history clear. An overloaded timber Fink upsizes in timber and an oversized one lightens in timber. 91 test cases in total.
+- Runtime (Stage 5): under Xvfb, an overloaded Pratt (`LOADPATH_PRESET=pratt:24,6,1.6`) shows mode pills, buckled bows, the legend entry and the inspector failure list; `J` cycles with a position toast; clicking a failure row selects its member. The presets flyout was driven end to end (span set to 30 m, K truss loaded, `Ctrl+Z` restored and refit the previous structure). Share → New → Paste round-tripped the Howe roof through the real X11 clipboard, and `Ctrl+Z` undid the paste.
 - 21 unit tests: a triangle truss matches method-of-joints forces and reactions to three decimals; a square without a diagonal is a mechanism; detached parts are left out; drags coalesce; delete/split/duplicate revert exactly; samples serialize round-trip and all solve below full utilization.
 - Runtime: the app was driven under Xvfb with `xdotool` (`tools/drive.sh`) through select, drag with live re-solve, undo, node and member chaining with guides, load vector drag, support cycling, marquee delete, load-handle drag, number-field editing, outline selection and collapse, bulk support and section actions, section drag-and-drop, the combo box, the palette (search, arrow keys, Enter), context menus, display modes, save to disk and autosave restore. The same pass was repeated after the MVUX conversion. Screenshots in `docs/` come from those runs.
 - Release build has zero warnings.
 - A UI craft pass (critique checklist, two widths, two heights, every display mode) brought control heights from five values to three (26 px chrome, 24 px status-bar segments, 32 px tool rail), moved arrow labels off the members, added the exaggeration readout, replaced the macOS `⌃K` glyph with `Ctrl+K`, and made the status bar drop the cursor readout below 960 px so the display toggles and max utilization stay whole.
 
-Fixture hooks (Debug only) make headless captures deterministic: `LOADPATH_SAMPLE=warren|cantilever|roof`, `LOADPATH_RESET=1` (ignore settings and autosave), `LOADPATH_SELECT=n4,m12`, `LOADPATH_MODE=utilization,deflection,reactions,nolabels`, `LOADPATH_TOOL=member`, `LOADPATH_PALETTE=1`, `LOADPATH_TOAST=text`, `LOADPATH_EDIT=unsupported|overload`, `LOADPATH_TRACE=path`.
+Fixture hooks (Debug only) make headless captures deterministic: `LOADPATH_SAMPLE=warren|cantilever|roof`, `LOADPATH_PRESET=pratt` or `pratt:24,6,1.6` (span, panels, depth), `LOADPATH_RESET=1` (ignore settings and autosave), `LOADPATH_SELECT=n4,m12`, `LOADPATH_MODE=utilization,deflection,reactions,nolabels`, `LOADPATH_TOOL=member`, `LOADPATH_PALETTE=1`, `LOADPATH_TOAST=text`, `LOADPATH_EDIT=unsupported|overload`, `LOADPATH_TRACE=path`.
 
 ## Platform notes
 
 - The window is sized at launch through `ApplicationView.PreferredLaunchViewSize`; resizing after creation raced the X11 Skia surface and produced a stale first layout. A self-healing check still nudges the size if the layout ever disagrees with the frame.
 - On Linux the file pickers go through the xdg-desktop-portal. Without a session bus the app saves to `~/Documents/Loadpath` and says so in a toast.
+- Share uses `Windows.ApplicationModel.DataTransfer.Clipboard`, which works on the X11 host. Any clipboard exception falls back to a `.share.txt` file next to the Documents fallback folder.
+- `ItemsWrapGrid` is not implemented in Uno, so the preset tiles use `ItemsRepeater` with `UniformGridLayout`.
 - Mouse-wheel zoom uses `PointerWheelChanged`. Synthesized X11 button-4/5 clicks arrive as plain presses on this host, so wheel zoom was not exercised headlessly; `Ctrl+=`, `Ctrl+-`, `Ctrl+0`, `Ctrl+1` and `F` were.
 - `SKCanvasElement` ignores `UIElement.Opacity`; dimming is baked into the paints.
 - Load and reaction arrows have a fixed pixel length, so where their labels are clear depends on zoom. The renderer keeps the label boxes drawn each frame and gives an arrow label the first of four spots (beyond the tail, further beyond, beside the tail outward, beside it inward) that misses them.

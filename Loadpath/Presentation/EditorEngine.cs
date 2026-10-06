@@ -25,7 +25,7 @@ public sealed class EditorEngine
         Interaction = new WorkspaceInteraction(this);
         Analysis = AnalysisResult.EmptyResult;
 
-        Document.Changed += (_, _) => OnDocumentChanged();
+        Document.Changed += (_, e) => OnDocumentChanged(e.Kind);
         Selection.Changed += (_, _) => { SelectionChanged?.Invoke(this, EventArgs.Empty); RequestRender(); };
         History.Changed += (_, _) => HistoryChanged?.Invoke(this, EventArgs.Empty);
         Viewport.Changed += (_, _) => ViewportChanged?.Invoke(this, EventArgs.Empty);
@@ -44,7 +44,7 @@ public sealed class EditorEngine
     public WorkspaceInteraction Interaction { get; }
     public AnalysisResult Analysis { get; private set; }
     public string? FilePath { get; set; }
-    public bool IsDirty => History.Version != _savedVersion;
+    public bool IsDirty => !History.IsAtSavePoint;
     public bool HasSelection => !Selection.IsEmpty;
 
     /// <summary>Raised after every document change, once the analysis has been recomputed.</summary>
@@ -60,19 +60,20 @@ public sealed class EditorEngine
     public event EventHandler? PaletteRequested;
     public event EventHandler? SavedStateChanged;
 
-    private int _savedVersion;
 
     public void RequestRender() => RenderRequested?.Invoke(this, EventArgs.Empty);
     public void Toast(string message) => ToastRequested?.Invoke(this, message);
     public void RequestFit() => FitRequested?.Invoke(this, EventArgs.Empty);
     public void RequestPalette() => PaletteRequested?.Invoke(this, EventArgs.Empty);
 
-    private void OnDocumentChanged()
+    private void OnDocumentChanged(DocumentChangeKind kind)
     {
         Selection.Prune(Document);
         Analysis = TrussSolver.Solve(Document);
         AnalysisChanged?.Invoke(this, EventArgs.Empty);
         RequestRender();
+        // A whole-document swap (open, preset, paste, or undoing one) lands somewhere new: frame it.
+        if (kind == DocumentChangeKind.Reset && Document.Nodes.Count > 0) RequestFit();
     }
 
     private void OnOptionsChanged(string name)
@@ -87,7 +88,7 @@ public sealed class EditorEngine
 
     public void MarkSaved()
     {
-        _savedVersion = History.Version;
+        History.MarkSaved();
         SavedStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -103,6 +104,25 @@ public sealed class EditorEngine
     }
 
     public void LoadSample(string id) => LoadSnapshot(SampleStructures.Build(id), "Load sample", null);
+
+    /// <summary>
+    /// Replace the document as one undoable step, so Ctrl+Z brings back what was there. Presets and pasted designs
+    /// land this way; the result is a new, unsaved document.
+    /// </summary>
+    public void ReplaceDocument(DocumentSnapshot snapshot, string label)
+    {
+        Interaction.CancelTool();
+        Selection.Clear();
+        History.Do(new ReplaceDocumentEdit(snapshot, label));
+        FilePath = null;
+    }
+
+    public void LoadPreset(string id, PresetParameters parameters)
+    {
+        var preset = TrussPresets.Find(id);
+        ReplaceDocument(TrussPresets.Build(preset.Id, parameters), $"Load {preset.Title} preset");
+        Toast($"{Document.Name} · Ctrl+Z restores your previous structure");
+    }
 
     public void NewDocument() => LoadSnapshot(new DocumentSnapshot { Name = "Untitled", Nodes = [], Members = [] }, "New", null);
 
@@ -197,11 +217,68 @@ public sealed class EditorEngine
         else Toast("Select one member to split");
     }
 
+    /// <summary>
+    /// With members over capacity, step through them worst first, wrapping; otherwise select the governing member.
+    /// </summary>
     public void JumpToCritical()
     {
-        if (Analysis.CriticalMemberId is { } id) Selection.Set(ElementRef.Member(id));
+        var failures = Analysis.Failures;
+        if (failures.Count > 0)
+        {
+            var current = Selection.Single is { IsMember: true } r ? failures.ToList().FindIndex(f => f.MemberId == r.Id) : -1;
+            var next = failures[(current + 1) % failures.Count];
+            Selection.Set(ElementRef.Member(next.MemberId));
+            if (failures.Count > 1) Toast($"M{next.MemberId} {FailureVerb(next.Failure)} at {next.Utilization * 100:0}% · {(current + 1) % failures.Count + 1} of {failures.Count}");
+        }
+        else if (Analysis.CriticalMemberId is { } id) Selection.Set(ElementRef.Member(id));
         else Toast("No solved result yet");
     }
+
+    /// <summary>
+    /// Give every failing member the lightest library section that carries it, as one undo step.
+    /// The toast reports what changed, the mass it costs, and anything the library cannot carry.
+    /// </summary>
+    public void UpsizeFailingMembers()
+    {
+        if (Analysis.Failures.Count == 0) { Toast("Nothing is over capacity"); return; }
+        var plan = SectionSizer.Plan(Document);
+        var stuck = plan.Unresolved.Count == 0 ? "" : $"{Ids(plan.Unresolved)} {(plan.Unresolved.Count == 1 ? "is" : "are")} beyond the section library: shorten {(plan.Unresolved.Count == 1 ? "it" : "them")} or add depth";
+        if (plan.IsEmpty) { Toast(stuck); return; }
+
+        var n = plan.Changes.Count;
+        History.BeginTransaction(n == 1 ? $"Upsize M{plan.Changes[0].MemberId}" : $"Upsize {n} members");
+        foreach (var group in plan.Changes.GroupBy(c => c.To)) History.Do(new SetSectionEdit(group.Select(c => c.MemberId), group.Key));
+        History.CommitTransaction();
+        var mass = $"{(plan.AddedMassKg >= 0 ? "+" : "−")}{Math.Abs(plan.AddedMassKg):0.#} kg";
+        Toast($"Upsized {(n == 1 ? "1 member" : $"{n} members")} · {mass}" + (stuck.Length > 0 ? $" · {stuck}" : " · Ctrl+Z to undo"));
+
+        static string Ids(IReadOnlyList<int> ids) => ids.Count <= 3 ? string.Join(", ", ids.Select(i => $"M{i}")) : $"M{ids[0]}, M{ids[1]} and {ids.Count - 2} more";
+    }
+
+    /// <summary>
+    /// Give members the lightest same-material section that keeps every member within its limit, as one undo step.
+    /// Runs only on a structure with no failures, so it never trades a pass for a fail.
+    /// </summary>
+    public void LightenMembers()
+    {
+        if (!Analysis.IsSolved) { Toast("Nothing solved yet"); return; }
+        if (Analysis.Failures.Count > 0) { Toast("Fix the failing members first: press U"); return; }
+        var plan = SectionSizer.PlanLighten(Document);
+        if (plan.IsEmpty) { Toast("Every loaded member already has the lightest section that works"); return; }
+
+        var n = plan.Changes.Count;
+        History.BeginTransaction(n == 1 ? $"Lighten M{plan.Changes[0].MemberId}" : $"Lighten {n} members");
+        foreach (var group in plan.Changes.GroupBy(c => c.To)) History.Do(new SetSectionEdit(group.Select(c => c.MemberId), group.Key));
+        History.CommitTransaction();
+        Toast($"Lightened {(n == 1 ? "1 member" : $"{n} members")} · −{Math.Abs(plan.AddedMassKg):0.#} kg · max utilization {Analysis.MaxUtilization * 100:0}% · Ctrl+Z to undo");
+    }
+
+    public static string FailureVerb(FailureMode mode) => mode switch
+    {
+        FailureMode.Buckling => "buckles",
+        FailureMode.Yield => "yields",
+        _ => "holds",
+    };
 
     /// <summary>Select an element by its outline key ("n4", "m12").</summary>
     public void SelectByKey(string key, bool extend)
@@ -254,7 +331,9 @@ public sealed class EditorEngine
         c.Add(new AppCommand("structure.noSupport", "Remove support", "Structure", null, () => SetSupportOnSelection(SupportKind.None), () => Selection.NodeCount > 0));
         c.Add(new AppCommand("structure.clearLoad", "Clear load", "Structure", null, ClearLoadOnSelection, () => Selection.NodeCount > 0));
         c.Add(new AppCommand("structure.split", "Split member at midpoint", "Structure", null, SplitSelectedMember, () => Selection.Single is { IsMember: true }, "node"));
-        c.Add(new AppCommand("structure.critical", "Jump to critical member", "Structure", "J", JumpToCritical, () => Analysis.IsSolved, "target"));
+        c.Add(new AppCommand("structure.upsize", "Upsize failing members", "Structure", "U", UpsizeFailingMembers, () => Analysis.Failures.Count > 0, "support"));
+        c.Add(new AppCommand("structure.lighten", "Lighten members", "Structure", "Shift+U", LightenMembers, () => Analysis.IsSolved && Analysis.Failures.Count == 0, "support"));
+        c.Add(new AppCommand("structure.critical", "Next failing or critical member", "Structure", "J", JumpToCritical, () => Analysis.IsSolved, "target"));
         foreach (var s in Section.Library)
         {
             var section = s;
@@ -277,6 +356,12 @@ public sealed class EditorEngine
         c.Add(new AppCommand("view.snap", "Toggle snapping", "View", "G", () => Options.SnapEnabled = !Options.SnapEnabled));
         c.Add(new AppCommand("view.inspector", "Toggle inspector", "View", "Ctrl+\\", () => Options.InspectorVisible = !Options.InspectorVisible, icon: "panel"));
         c.Add(new AppCommand("view.palette", "Command palette", "View", "Ctrl+K", RequestPalette, icon: "search"));
+
+        foreach (var preset in TrussPresets.Catalog)
+        {
+            var p = preset;
+            c.Add(new AppCommand($"preset.{p.Id}", $"Preset: {p.Title}", "Presets", null, () => LoadPreset(p.Id, p.Defaults), icon: "mark"));
+        }
 
         foreach (var (id, title, _) in SampleStructures.Catalog)
         {
