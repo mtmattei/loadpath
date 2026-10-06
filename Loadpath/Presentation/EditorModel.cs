@@ -201,6 +201,7 @@ public partial record EditorModel
     [Command] public void SupportPin() => Ui(() => SetSupport(SupportKind.Pin));
     [Command] public void SupportRoller() => Ui(() => SetSupport(SupportKind.RollerY));
     [Command] public void SupportRollerX() => Ui(() => SetSupport(SupportKind.RollerX));
+    [Command] public void UpsizeFailing() => Ui(() => _engine.UpsizeFailingMembers());
     [Command] public void SelectMember(string key) => Ui(() => _engine.SelectByKey(key, false));
     [Command] public void SampleWarren() => Ui(() => _engine.LoadSample("warren"));
     [Command] public void SampleCantilever() => Ui(() => _engine.LoadSample("cantilever"));

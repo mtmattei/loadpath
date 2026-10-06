@@ -461,3 +461,10 @@ Three additions that make a design leave the app, start faster, and say clearly 
 
 - Should a share code also carry view options (display mode, exaggeration)? Left out: the code describes the structure, and the receiver keeps their own view.
 - URL form (`https://…/#LP1.…`) needs a hosted viewer; out of scope until there is one.
+
+### Addendum — Upsize failing members
+
+- **Decision**: lightest library section under 95 % utilization for each failing member, same material first. Only failing members change.
+- **Reason**: it answers "what do I change?" directly from the failure list, and the result stays one undo step.
+- **Tradeoff**: in a redundant truss, resizing moves force onto members that were not failing. The sizer re-solves up to 8 passes, but a member that ends just under 100 % is left alone. Downsizing over-designed members is a separate feature.
+- The section library gained CHS 114.3×5.0, CHS 139.7×5.0 and SHS 100×100×5. The previous largest section (SHS 80) buckles at about 145 kN over 4 m, too little for a 24 m bridge.

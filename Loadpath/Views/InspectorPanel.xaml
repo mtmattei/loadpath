@@ -132,6 +132,15 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+              <Button Style="{StaticResource InspectorAction}" Command="{Binding UpsizeFailing}" HorizontalAlignment="Stretch" Margin="0,10,0,0"
+                      ToolTipService.ToolTip="Lightest library section that carries each failing member   U" AutomationProperties.Name="Upsize failing members">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Text="UPSIZE FAILING MEMBERS" VerticalAlignment="Center" />
+                  <Border Style="{StaticResource Keycap}">
+                    <TextBlock Text="U" Style="{StaticResource KeycapText}" />
+                  </Border>
+                </StackPanel>
+              </Button>
             </StackPanel>
           </StackPanel>
           <StackPanel c:Motion.Reveal="True" Visibility="{Binding ShowResultDetails, Converter={StaticResource Vis}}">
@@ -332,7 +341,7 @@
             <TextBlock Text="{Binding Inspector.MaterialText}" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,10,0,0" />
             <TextBlock Text="{Binding Inspector.AreaText}" Style="{StaticResource MonoCaption}" Margin="0,2,0,0" />
             <TextBlock Text="Drag a section onto any member to apply it." Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,10,0,0" />
-            <!-- Eight chips overflow one 296 px row; a uniform grid gives two rows of four instead of clipping. -->
+            <!-- The chips overflow one 296 px row; a uniform grid wraps them into rows of four instead of clipping. -->
             <ItemsRepeater ItemsSource="{Binding Sections}" Margin="0,8,0,0">
               <ItemsRepeater.Layout>
                 <UniformGridLayout MinItemWidth="68" MinItemHeight="24" MinColumnSpacing="4" MinRowSpacing="4" ItemsStretch="Fill" />

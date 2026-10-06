@@ -235,6 +235,27 @@ public sealed class EditorEngine
         else Toast("No solved result yet");
     }
 
+    /// <summary>
+    /// Give every failing member the lightest library section that carries it, as one undo step.
+    /// The toast reports what changed, the mass it costs, and anything the library cannot carry.
+    /// </summary>
+    public void UpsizeFailingMembers()
+    {
+        if (Analysis.Failures.Count == 0) { Toast("Nothing is over capacity"); return; }
+        var plan = SectionSizer.Plan(Document);
+        var stuck = plan.Unresolved.Count == 0 ? "" : $"{Ids(plan.Unresolved)} {(plan.Unresolved.Count == 1 ? "is" : "are")} beyond the section library: shorten {(plan.Unresolved.Count == 1 ? "it" : "them")} or add depth";
+        if (plan.IsEmpty) { Toast(stuck); return; }
+
+        var n = plan.Changes.Count;
+        History.BeginTransaction(n == 1 ? $"Upsize M{plan.Changes[0].MemberId}" : $"Upsize {n} members");
+        foreach (var group in plan.Changes.GroupBy(c => c.To)) History.Do(new SetSectionEdit(group.Select(c => c.MemberId), group.Key));
+        History.CommitTransaction();
+        var mass = $"{(plan.AddedMassKg >= 0 ? "+" : "−")}{Math.Abs(plan.AddedMassKg):0.#} kg";
+        Toast($"Upsized {(n == 1 ? "1 member" : $"{n} members")} · {mass}" + (stuck.Length > 0 ? $" · {stuck}" : " · Ctrl+Z to undo"));
+
+        static string Ids(IReadOnlyList<int> ids) => ids.Count <= 3 ? string.Join(", ", ids.Select(i => $"M{i}")) : $"M{ids[0]}, M{ids[1]} and {ids.Count - 2} more";
+    }
+
     public static string FailureVerb(FailureMode mode) => mode switch
     {
         FailureMode.Buckling => "buckles",
@@ -293,6 +314,7 @@ public sealed class EditorEngine
         c.Add(new AppCommand("structure.noSupport", "Remove support", "Structure", null, () => SetSupportOnSelection(SupportKind.None), () => Selection.NodeCount > 0));
         c.Add(new AppCommand("structure.clearLoad", "Clear load", "Structure", null, ClearLoadOnSelection, () => Selection.NodeCount > 0));
         c.Add(new AppCommand("structure.split", "Split member at midpoint", "Structure", null, SplitSelectedMember, () => Selection.Single is { IsMember: true }, "node"));
+        c.Add(new AppCommand("structure.upsize", "Upsize failing members", "Structure", "U", UpsizeFailingMembers, () => Analysis.Failures.Count > 0, "support"));
         c.Add(new AppCommand("structure.critical", "Next failing or critical member", "Structure", "J", JumpToCritical, () => Analysis.IsSolved, "target"));
         foreach (var s in Section.Library)
         {
