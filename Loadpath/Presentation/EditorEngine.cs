@@ -25,7 +25,7 @@ public sealed class EditorEngine
         Interaction = new WorkspaceInteraction(this);
         Analysis = AnalysisResult.EmptyResult;
 
-        Document.Changed += (_, _) => OnDocumentChanged();
+        Document.Changed += (_, e) => OnDocumentChanged(e.Kind);
         Selection.Changed += (_, _) => { SelectionChanged?.Invoke(this, EventArgs.Empty); RequestRender(); };
         History.Changed += (_, _) => HistoryChanged?.Invoke(this, EventArgs.Empty);
         Viewport.Changed += (_, _) => ViewportChanged?.Invoke(this, EventArgs.Empty);
@@ -67,12 +67,14 @@ public sealed class EditorEngine
     public void RequestFit() => FitRequested?.Invoke(this, EventArgs.Empty);
     public void RequestPalette() => PaletteRequested?.Invoke(this, EventArgs.Empty);
 
-    private void OnDocumentChanged()
+    private void OnDocumentChanged(DocumentChangeKind kind)
     {
         Selection.Prune(Document);
         Analysis = TrussSolver.Solve(Document);
         AnalysisChanged?.Invoke(this, EventArgs.Empty);
         RequestRender();
+        // A whole-document swap (open, preset, paste, or undoing one) lands somewhere new: frame it.
+        if (kind == DocumentChangeKind.Reset && Document.Nodes.Count > 0) RequestFit();
     }
 
     private void OnOptionsChanged(string name)
@@ -103,6 +105,25 @@ public sealed class EditorEngine
     }
 
     public void LoadSample(string id) => LoadSnapshot(SampleStructures.Build(id), "Load sample", null);
+
+    /// <summary>
+    /// Replace the document as one undoable step, so Ctrl+Z brings back what was there. Presets and pasted designs
+    /// land this way; the result is a new, unsaved document.
+    /// </summary>
+    public void ReplaceDocument(DocumentSnapshot snapshot, string label)
+    {
+        Interaction.CancelTool();
+        Selection.Clear();
+        History.Do(new ReplaceDocumentEdit(snapshot, label));
+        FilePath = null;
+    }
+
+    public void LoadPreset(string id, PresetParameters parameters)
+    {
+        var preset = TrussPresets.Find(id);
+        ReplaceDocument(TrussPresets.Build(preset.Id, parameters), $"Load {preset.Title} preset");
+        Toast($"{Document.Name} · Ctrl+Z restores your previous structure");
+    }
 
     public void NewDocument() => LoadSnapshot(new DocumentSnapshot { Name = "Untitled", Nodes = [], Members = [] }, "New", null);
 
@@ -197,11 +218,29 @@ public sealed class EditorEngine
         else Toast("Select one member to split");
     }
 
+    /// <summary>
+    /// With members over capacity, step through them worst first, wrapping; otherwise select the governing member.
+    /// </summary>
     public void JumpToCritical()
     {
-        if (Analysis.CriticalMemberId is { } id) Selection.Set(ElementRef.Member(id));
+        var failures = Analysis.Failures;
+        if (failures.Count > 0)
+        {
+            var current = Selection.Single is { IsMember: true } r ? failures.ToList().FindIndex(f => f.MemberId == r.Id) : -1;
+            var next = failures[(current + 1) % failures.Count];
+            Selection.Set(ElementRef.Member(next.MemberId));
+            if (failures.Count > 1) Toast($"M{next.MemberId} {FailureVerb(next.Failure)} at {next.Utilization * 100:0}% · {(current + 1) % failures.Count + 1} of {failures.Count}");
+        }
+        else if (Analysis.CriticalMemberId is { } id) Selection.Set(ElementRef.Member(id));
         else Toast("No solved result yet");
     }
+
+    public static string FailureVerb(FailureMode mode) => mode switch
+    {
+        FailureMode.Buckling => "buckles",
+        FailureMode.Yield => "yields",
+        _ => "holds",
+    };
 
     /// <summary>Select an element by its outline key ("n4", "m12").</summary>
     public void SelectByKey(string key, bool extend)
@@ -254,7 +293,7 @@ public sealed class EditorEngine
         c.Add(new AppCommand("structure.noSupport", "Remove support", "Structure", null, () => SetSupportOnSelection(SupportKind.None), () => Selection.NodeCount > 0));
         c.Add(new AppCommand("structure.clearLoad", "Clear load", "Structure", null, ClearLoadOnSelection, () => Selection.NodeCount > 0));
         c.Add(new AppCommand("structure.split", "Split member at midpoint", "Structure", null, SplitSelectedMember, () => Selection.Single is { IsMember: true }, "node"));
-        c.Add(new AppCommand("structure.critical", "Jump to critical member", "Structure", "J", JumpToCritical, () => Analysis.IsSolved, "target"));
+        c.Add(new AppCommand("structure.critical", "Next failing or critical member", "Structure", "J", JumpToCritical, () => Analysis.IsSolved, "target"));
         foreach (var s in Section.Library)
         {
             var section = s;
@@ -277,6 +316,12 @@ public sealed class EditorEngine
         c.Add(new AppCommand("view.snap", "Toggle snapping", "View", "G", () => Options.SnapEnabled = !Options.SnapEnabled));
         c.Add(new AppCommand("view.inspector", "Toggle inspector", "View", "Ctrl+\\", () => Options.InspectorVisible = !Options.InspectorVisible, icon: "panel"));
         c.Add(new AppCommand("view.palette", "Command palette", "View", "Ctrl+K", RequestPalette, icon: "search"));
+
+        foreach (var preset in TrussPresets.Catalog)
+        {
+            var p = preset;
+            c.Add(new AppCommand($"preset.{p.Id}", $"Preset: {p.Title}", "Presets", null, () => LoadPreset(p.Id, p.Defaults), icon: "mark"));
+        }
 
         foreach (var (id, title, _) in SampleStructures.Catalog)
         {

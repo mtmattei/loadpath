@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="using:Loadpath.Controls"
+             x:Name="Strip"
              Height="{StaticResource TitleStripHeight}">
   <Grid Background="{StaticResource CanvasBrush}" Padding="16,0,16,0">
     <!-- The right cluster yields as the window narrows: the over-capacity pill, then the noise control's label, then search. -->
@@ -31,6 +32,8 @@
             <Setter Target="NoiseLabel.Visibility" Value="Collapsed" />
             <Setter Target="DocumentName.Visibility" Value="Collapsed" />
             <Setter Target="SearchButton.Visibility" Value="Collapsed" />
+            <Setter Target="PresetsButton.Visibility" Value="Collapsed" />
+            <Setter Target="ShareButton.Visibility" Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -188,6 +191,57 @@
           </Border>
         </StackPanel>
       </Button>
+      <Button x:Name="PresetsButton" Style="{StaticResource LinkButton}" Content="PRESETS" ToolTipService.ToolTip="Start from a truss type" AutomationProperties.Name="Truss presets">
+        <Button.Flyout>
+          <Flyout x:Name="PresetsFlyout" Placement="BottomEdgeAlignedRight" FlyoutPresenterStyle="{StaticResource SheetFlyoutPresenter}">
+            <StackPanel Width="380">
+              <StackPanel Padding="16,14,16,10" Spacing="6">
+                <TextBlock Text="PRESETS" FontFamily="{StaticResource MonoFontMedium}" FontSize="12" Foreground="{StaticResource AccentBrush}" />
+                <TextBlock Text="Pick a truss type. It replaces the drawing; Ctrl+Z brings yours back."
+                           Style="{StaticResource CaptionText}" TextWrapping="Wrap" TextTrimming="None" />
+              </StackPanel>
+              <Grid Padding="16,0,16,12" ColumnSpacing="10">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <StackPanel>
+                  <TextBlock Text="SPAN" Style="{StaticResource FieldLabel}" />
+                  <c:NumberField Value="{Binding PresetSpan, Mode=TwoWay}" Unit="m" Decimals="1" Step="1" AutomationProperties.Name="Preset span" />
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="PANELS" Style="{StaticResource FieldLabel}" />
+                  <c:NumberField Value="{Binding PresetPanels, Mode=TwoWay}" Decimals="0" Step="1" AutomationProperties.Name="Preset panels" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="DEPTH / RISE" Style="{StaticResource FieldLabel}" />
+                  <c:NumberField Value="{Binding PresetDepth, Mode=TwoWay}" Unit="m" Decimals="1" Step="0.5" AutomationProperties.Name="Preset depth or rise" />
+                </StackPanel>
+              </Grid>
+              <Rectangle Style="{StaticResource DashedRule}" />
+              <!-- Two tiles per row. -->
+              <ItemsRepeater ItemsSource="{Binding Presets}" Margin="12,10,12,14">
+                <ItemsRepeater.Layout>
+                  <UniformGridLayout MinItemWidth="172" MinItemHeight="110" MinColumnSpacing="8" MinRowSpacing="6" MaximumRowsOrColumns="2" />
+                </ItemsRepeater.Layout>
+                <ItemsRepeater.ItemTemplate>
+                  <DataTemplate>
+                    <Button Style="{StaticResource QuietButton}" Width="172" Height="110" Padding="8,8,8,6"
+                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Click="OnPresetClick"
+                            Command="{Binding DataContext.LoadPreset, ElementName=Strip}" CommandParameter="{Binding Id}"
+                            AutomationProperties.Name="{Binding AutomationName}" ToolTipService.ToolTip="{Binding Description}">
+                      <StackPanel Spacing="4">
+                        <c:Sketch Segments="{Binding Sketch}" Stroke="{StaticResource AccentBrush}" Height="52" Width="156" HorizontalAlignment="Left" />
+                        <TextBlock Text="{Binding Title}" FontFamily="{StaticResource MonoFontMedium}" FontSize="12" Foreground="{StaticResource InkBrush}" />
+                        <TextBlock Text="{Binding Size}" Style="{StaticResource MonoCaption}" FontSize="10.5" LineHeight="14" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+              </ItemsRepeater>
+            </StackPanel>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
+      <Button x:Name="ShareButton" Style="{StaticResource LinkButton}" Content="SHARE" Command="{Binding ShareDesign}"
+              ToolTipService.ToolTip="Copy a share code   Ctrl+Shift+C" AutomationProperties.Name="Copy share code" />
       <Button Style="{StaticResource LinkButton}" Content="OPEN" Command="{Binding OpenFile}" ToolTipService.ToolTip="Open   Ctrl+O" AutomationProperties.Name="Open" />
       <Button Style="{StaticResource PrimaryButton}" Content="SAVE" Command="{Binding SaveFile}" ToolTipService.ToolTip="Save   Ctrl+S" AutomationProperties.Name="Save" />
     </StackPanel>

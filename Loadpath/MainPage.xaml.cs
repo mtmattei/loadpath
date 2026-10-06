@@ -121,10 +121,22 @@ public sealed partial class MainPage : Page
     {
         var sample = Environment.GetEnvironmentVariable("LOADPATH_SAMPLE");
         var fixtureFile = Environment.GetEnvironmentVariable("LOADPATH_FILE");
+        var preset = Environment.GetEnvironmentVariable("LOADPATH_PRESET");
         if (!string.IsNullOrEmpty(sample))
         {
             Engine.LoadSample(sample);
         }
+#if DEBUG
+        else if (!string.IsNullOrEmpty(preset))
+        {
+            // "pratt" or "pratt:40,6,2" (span, panels, depth).
+            var parts = preset.Split(':');
+            var p = Core.Samples.TrussPresets.Find(parts[0]).Defaults;
+            if (parts.Length > 1 && parts[1].Split(',') is { Length: 3 } v)
+                p = new(double.Parse(v[0], System.Globalization.CultureInfo.InvariantCulture), int.Parse(v[1]), double.Parse(v[2], System.Globalization.CultureInfo.InvariantCulture));
+            Engine.LoadSnapshot(Core.Samples.TrussPresets.Build(parts[0], p), "Load preset", null);
+        }
+#endif
 #if DEBUG
         else if (!string.IsNullOrEmpty(fixtureFile) && File.Exists(fixtureFile))
         {
@@ -451,6 +463,60 @@ public sealed partial class MainPage : Page
         Engine.Commands.Add(new AppCommand("file.open", "Open…", "File", "Ctrl+O", () => _ = OpenAsync(), icon: "folder"));
         Engine.Commands.Add(new AppCommand("file.save", "Save", "File", "Ctrl+S", () => _ = SaveAsync(false), icon: "save"));
         Engine.Commands.Add(new AppCommand("file.saveAs", "Save as…", "File", "Ctrl+Shift+S", () => _ = SaveAsync(true), icon: "save"));
+        Engine.Commands.Add(new AppCommand("file.share", "Copy share code", "File", "Ctrl+Shift+C", () => _ = ShareAsync(), () => Engine.Document.Nodes.Count > 0, "duplicate"));
+        Engine.Commands.Add(new AppCommand("file.paste", "Paste design from share code", "File", "Ctrl+Shift+V", () => _ = PasteAsync(), icon: "folder"));
+    }
+
+    /// <summary>
+    /// Copy the document as a one-line share code. Hosts without a working clipboard get the code written next to
+    /// the fallback save folder instead, and the toast says where.
+    /// </summary>
+    private async Task ShareAsync()
+    {
+        var code = ShareCode.Encode(Engine.Document);
+        var size = code.Length < 1024 ? $"{code.Length} characters" : $"{code.Length / 1024.0:0.0} kB";
+        try
+        {
+            var package = new Windows.ApplicationModel.DataTransfer.DataPackage();
+            package.SetText(code);
+            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
+            Windows.ApplicationModel.DataTransfer.Clipboard.Flush();
+            ShowToast($"Share code copied ({size}). Paste it in Loadpath with Ctrl+Shift+V.");
+        }
+        catch (Exception)
+        {
+            var path = Path.Combine(_files.FallbackFolder, SafeName(Engine.Document.Name) + ShareFileSuffix);
+            await File.WriteAllTextAsync(path, code);
+            ShowToast($"No clipboard here. Share code saved to {path}");
+        }
+    }
+
+    private const string ShareFileSuffix = ".share.txt";
+
+    private async Task PasteAsync()
+    {
+        string? text = null;
+        try
+        {
+            var content = Windows.ApplicationModel.DataTransfer.Clipboard.GetContent();
+            if (content.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Text)) text = await content.GetTextAsync();
+        }
+        catch (Exception)
+        {
+            // No clipboard on this host: read the most recent share file written by ShareAsync.
+            var file = Directory.GetFiles(_files.FallbackFolder, "*" + ShareFileSuffix).OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault();
+            if (file is not null) text = await File.ReadAllTextAsync(file);
+        }
+        if (!ShareCode.TryDecode(text, out var snapshot, out var error)) { ShowToast(error); return; }
+        Engine.ReplaceDocument(snapshot!, "Paste design");
+        ShowToast($"Pasted {Engine.Document.Name} · Ctrl+Z to undo");
+    }
+
+    private static string SafeName(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var clean = new string(name.Select(ch => invalid.Contains(ch) ? '_' : ch).ToArray()).Trim();
+        return clean.Length == 0 ? "Untitled" : clean;
     }
 
     private async Task NewAsync()

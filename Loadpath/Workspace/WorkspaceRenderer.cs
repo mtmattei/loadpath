@@ -73,6 +73,7 @@ public sealed class WorkspaceRenderer : IDisposable
         if (s.ShowDimensions) DrawDimensions(canvas, s);
         if (s.ShowDeflection && solved) DrawDeflectedShape(canvas, s);
         DrawMembers(canvas, s);
+        if (solved && s.ShowOverCapacity) DrawBuckledShapes(canvas, s);
         if (solved) DrawMemberLabels(canvas, s);
         if (s.ShowPartNames) DrawPartNames(canvas, s);
         if (s.ShowSupports) DrawSupports(canvas, s);
@@ -227,6 +228,51 @@ public sealed class WorkspaceRenderer : IDisposable
         }
     }
 
+    private bool Collides(SKRect rect)
+    {
+        foreach (var r in _labelRects) if (r.IntersectsWith(rect)) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// A member failing by buckling gets its first Euler mode drawn beside it: a dashed red half-sine bowing toward
+    /// the structure's center (labels go the other way), so "this strut bows out" reads without the legend.
+    /// </summary>
+    private void DrawBuckledShapes(SKCanvas canvas, RenderSnapshot s)
+    {
+        foreach (ref readonly var m in s.Members.AsSpan())
+        {
+            if (!m.Overstressed || !m.BucklingGoverns) continue;
+            var d = new SKPoint(m.B.X - m.A.X, m.B.Y - m.A.Y);
+            var len = MathF.Sqrt(d.X * d.X + d.Y * d.Y);
+            if (len < 24) continue;
+            var mid = new SKPoint((m.A.X + m.B.X) / 2, (m.A.Y + m.B.Y) / 2);
+            var nx = -d.Y / len; var ny = d.X / len;
+            if (nx * (s.Center.X - mid.X) + ny * (s.Center.Y - mid.Y) < 0) { nx = -nx; ny = -ny; }
+            var amp = RibbonWidth(s, m, Stroke.Over) / 2 + Math.Clamp(len * 0.07f, 5, 16);
+            BowPath(m.A, m.B, nx, ny, amp);
+            _stroke.StrokeWidth = 1.3f;
+            _stroke.Color = m.Dimmed ? SkiaPalette.Danger.WithAlpha(0.35) : SkiaPalette.Danger;
+            _stroke.PathEffect = _deflectDash;
+            canvas.DrawPath(_path, _stroke);
+            _stroke.PathEffect = null;
+        }
+    }
+
+    /// <summary>Half-sine from a to b, displaced along (nx, ny) by up to amp pixels, into the shared path.</summary>
+    private void BowPath(SKPoint a, SKPoint b, float nx, float ny, float amp)
+    {
+        const int steps = 24;
+        _path.Reset();
+        for (var i = 0; i <= steps; i++)
+        {
+            var t = i / (float)steps;
+            var off = amp * MathF.Sin(MathF.PI * t);
+            var p = new SKPoint(a.X + (b.X - a.X) * t + nx * off, a.Y + (b.Y - a.Y) * t + ny * off);
+            if (i == 0) _path.MoveTo(p); else _path.LineTo(p);
+        }
+    }
+
     /// <summary>Plain force numbers (member-forces layer) and red pills for members over capacity (over-capacity layer).</summary>
     private void DrawMemberLabels(SKCanvas canvas, RenderSnapshot s)
     {
@@ -241,13 +287,21 @@ public sealed class WorkspaceRenderer : IDisposable
             var nx = -d.Y / len; var ny = d.X / len;
             if (nx * (s.Center.X - mid.X) + ny * (s.Center.Y - mid.Y) > 0) { nx = -nx; ny = -ny; }
             var force = Math.Abs(m.ForceKn) < 0.05 ? "0.0" : (m.ForceKn >= 0 ? "+" : "−") + $"{Math.Abs(m.ForceKn):0.0}";
-            var text = pill ? $"{force} · {m.Utilization * 100:0}%"
+            // A failing member's pill names the mode; its force stays in the outline and the inspector.
+            var text = pill ? $"{(m.BucklingGoverns ? "BUCKLES" : "YIELDS")} {m.Utilization * 100:0}%"
                 : s.Mode == DisplayMode.Utilization ? $"{m.Utilization * 100:0}%" : force;
             var font = pill ? _monoBold : _monoSmall;
             var width = font.MeasureText(text);
             var off = RibbonWidth(s, m, StrokeOf(s, m)) / 2 + (pill ? 16 : 11);
             var cx = mid.X + nx * off; var cy = mid.Y + ny * off;
             var rect = new SKRect(cx - width / 2 - 6, cy - 8, cx + width / 2 + 6, cy + 8);
+            if (pill && Collides(rect))
+            {
+                // Crowded (short members at low zoom): keep the percentage, drop the verb.
+                text = $"{m.Utilization * 100:0}%";
+                width = font.MeasureText(text);
+                rect = new SKRect(cx - width / 2 - 6, cy - 8, cx + width / 2 + 6, cy + 8);
+            }
             _labelRects.Add(rect);
             if (pill)
             {
@@ -762,6 +816,20 @@ public sealed class WorkspaceRenderer : IDisposable
         x = LegendItem(canvas, x, y, Stroke.Tension, SkiaPalette.Accent, "TENSION");
         x = LegendItem(canvas, x, y, Stroke.Compression, SkiaPalette.Accent, "COMPRESSION");
         x = LegendItem(canvas, x, y, Stroke.Over, SkiaPalette.Danger, "OVER CAPACITY");
+        var anyBuckles = false;
+        foreach (ref readonly var m in s.Members.AsSpan()) anyBuckles |= m.Overstressed && m.BucklingGoverns;
+        if (anyBuckles && s.ShowOverCapacity && s.Status == AnalysisStatus.Solved)
+        {
+            BowPath(new SKPoint(x, y - 2), new SKPoint(x + 26, y - 2), 0, -1, 6);
+            _stroke.StrokeWidth = 1.3f;
+            _stroke.Color = SkiaPalette.Danger;
+            _stroke.PathEffect = _deflectDash;
+            canvas.DrawPath(_path, _stroke);
+            _stroke.PathEffect = null;
+            _text.Color = SkiaPalette.Danger;
+            canvas.DrawText("BUCKLED SHAPE", x + 34, y, _monoSmall, _text);
+            x += 34 + _monoSmall.MeasureText("BUCKLED SHAPE") + 26;
+        }
         x = LegendItem(canvas, x, y, Stroke.Zero, SkiaPalette.Accent, "ZERO FORCE");
         if (s.ShowDeflection)
         {
