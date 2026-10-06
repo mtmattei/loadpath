@@ -15,6 +15,9 @@ public enum AnalysisStatus
     Solved,
 }
 
+/// <summary>How a member over capacity fails. Buckling only happens in compression.</summary>
+public enum FailureMode { None, Yield, Buckling }
+
 /// <summary>Per-member outcome. Forces in kN (positive = tension), stress in MPa.</summary>
 public readonly record struct MemberResult(
     int MemberId,
@@ -30,6 +33,7 @@ public readonly record struct MemberResult(
     public double Utilization => Math.Max(UtilizationYield, UtilizationBuckling);
     public bool BucklingGoverns => UtilizationBuckling > UtilizationYield;
     public bool IsOverstressed => Utilization >= 1.0;
+    public FailureMode Failure => !IsOverstressed ? FailureMode.None : BucklingGoverns ? FailureMode.Buckling : FailureMode.Yield;
 }
 
 /// <summary>Per-node outcome. Displacement in meters; reaction in kN (only nonzero at supports).</summary>
@@ -73,6 +77,13 @@ public sealed class AnalysisResult
     /// <summary>Nodes in parts that touch no support. They are left out of the solve and drawn neutral.</summary>
     public IReadOnlyList<int> DetachedNodeIds { get; }
     public bool HasDetached => DetachedNodeIds.Count > 0;
+
+    private IReadOnlyList<MemberResult>? _failures;
+
+    /// <summary>Members over capacity, worst first (ties by id). Empty unless solved.</summary>
+    public IReadOnlyList<MemberResult> Failures => _failures ??= IsSolved
+        ? Members.Values.Where(m => m.IsOverstressed).OrderByDescending(m => m.Utilization).ThenBy(m => m.MemberId).ToList()
+        : Array.Empty<MemberResult>();
 
     public MemberResult? For(int memberId) => Members.TryGetValue(memberId, out var r) ? r : null;
     public NodeResult? ForNode(int nodeId) => Nodes.TryGetValue(nodeId, out var r) ? r : null;
