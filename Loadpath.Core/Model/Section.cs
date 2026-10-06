@@ -29,8 +29,11 @@ public sealed record Section(string Id, string Name, double AreaMm2, double Seco
     public static readonly Section Rod16 = new("rod16", "Rod Ø16", 201, 3_217, Material.Steel);
     public static readonly Section Alu50 = new("alu50", "Al tube 50×3", 443, 123_000, Material.Aluminum);
     public static readonly Section Timber45x95 = new("t4595", "Timber 45×95", 4_275, 3_216_000, Material.Timber);
+    public static readonly Section Timber45x145 = new("t45145", "Timber 45×145", 6_525, 11_432_000, Material.Timber);
+    public static readonly Section Timber45x195 = new("t45195", "Timber 45×195", 8_775, 27_806_000, Material.Timber);
+    public static readonly Section Timber63x195 = new("t63195", "Timber 63×195", 12_285, 38_928_000, Material.Timber);
 
-    public static readonly IReadOnlyList<Section> Library = [Rod16, Chs48, Chs60, Chs76, Chs114, Chs139, Shs50, Shs80, Shs100, Alu50, Timber45x95];
+    public static readonly IReadOnlyList<Section> Library = [Rod16, Chs48, Chs60, Chs76, Chs114, Chs139, Shs50, Shs80, Shs100, Alu50, Timber45x95, Timber45x145, Timber45x195, Timber63x195];
 
     public static Section FindById(string id) => Library.FirstOrDefault(s => s.Id == id) ?? Chs48;
 }

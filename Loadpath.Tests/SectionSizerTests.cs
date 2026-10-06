@@ -92,8 +92,8 @@ public class SectionSizerTests
     {
         // 45x95 timber under 20 kN tension over 1 m: 20e3 / (4275e-6 * 24e6) = 0.19, keeps timber.
         Assert.Equal(Section.Timber45x95, SectionSizer.Pick(Section.Timber45x95, 20, 1));
-        // 200 kN is beyond the only timber section; the pick moves to the lightest steel or aluminum that works.
-        var pick = SectionSizer.Pick(Section.Timber45x95, 200, 1);
+        // 400 kN is beyond the largest timber section (63x195 yields at 295 kN); the pick moves to steel or aluminum.
+        var pick = SectionSizer.Pick(Section.Timber45x95, 400, 1);
         Assert.NotNull(pick);
         Assert.NotEqual(Material.Timber, pick!.Material);
     }
@@ -162,5 +162,29 @@ public class SectionSizerTests
         var after = TrussSolver.Solve(doc);
         Assert.Empty(after.Failures);
         Assert.All(after.Members, kv => Assert.True(kv.Value.Utilization <= Math.Max(SectionSizer.TargetUtilization, before.Members[kv.Key].Utilization) + 1e-9));
+    }
+
+    [Fact]
+    public void Overloaded_timber_roof_upsizes_in_timber()
+    {
+        // An 18 m Fink with a 2.5 m rise overloads 45x95 timber (315 %); the larger timber sizes carry it.
+        var doc = Preset("fink", 18, 4, 2.5);
+        var before = TrussSolver.Solve(doc);
+        Assert.NotEmpty(before.Failures);
+        var plan = SectionSizer.Plan(doc);
+        Assert.Empty(plan.Unresolved);
+        Assert.All(plan.Changes, c => Assert.Equal(Material.Timber, c.To.Material));
+    }
+
+    [Fact]
+    public void Oversized_timber_roof_lightens_in_timber()
+    {
+        var doc = Preset("fink", 6, 4, 2);
+        var h = new EditHistory(doc);
+        h.Do(new SetSectionEdit(doc.Members.Select(m => m.Id), Section.Timber63x195));
+        var plan = SectionSizer.PlanLighten(doc);
+        Assert.NotEmpty(plan.Changes);
+        Assert.All(plan.Changes, c => Assert.Equal(Material.Timber, c.To.Material));
+        Assert.True(plan.AddedMassKg < 0);
     }
 }
